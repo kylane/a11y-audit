@@ -440,13 +440,29 @@ Then ask the user:
 
 > **Where would you like screenshots and temporary files saved?**
 >
-> This includes before/after screenshots, visual comparison pages, and the CSV report (if using `--report`). These must be **outside your project folder** — file watchers inside the project trigger hot-reload every time a file is written.
+> This includes before/after screenshots, visual comparison pages, and the CSV report. These must be **outside your project folder** — file watchers inside the project trigger hot-reload every time a file is written.
 >
 > Default: `[detected-default-path]`
 >
 > Type a different path, or reply `default` to use the path shown above.
 
 Wait for the response. Set `SCREENSHOT_PATH` to the typed path, or to the platform default if the user replies "default", sends a blank message, or provides nothing. Create the folder if it doesn't already exist.
+
+**CSV export:**
+
+If `EXPORT_REPORT` is already set (from `--report` or `--fresh-report` flag), skip this.
+
+Otherwise ask:
+
+> **Would you like a CSV report at the end?**
+>
+> All findings will be saved as a CSV to your screenshots folder — easy to import into a spreadsheet or issue tracker.
+>
+> - **Yes** — create or append to an existing report for this label
+> - **Yes, fresh** — delete any existing report for this label and start clean
+> - **No**
+
+Wait for the response. Set `EXPORT_REPORT` to true for "Yes" or "Yes, fresh". Set `FRESH_REPORT` to true for "Yes, fresh".
 
 **Audit log:**
 - Check in order: `docs/ux/AUDIT_LOG.md` → `docs/AUDIT_LOG.md` → `AUDIT_LOG.md` → `.accessibility/audit-log.md`
