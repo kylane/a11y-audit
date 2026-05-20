@@ -1,6 +1,6 @@
 ---
 name: a11y-audit
-description: Run a full WCAG 2.2 AA accessibility audit (static analysis + axe-core + keyboard + NVDA + VoiceOver + structure + forms) on any web app. Guides the user through each step — open a browser, navigate to the state you want tested, say ready. Works with any framework or stack.
+description: Run a WCAG accessibility audit (configurable version and level — default 2.2 AA) using static analysis + axe-core + keyboard + NVDA + VoiceOver + structure + forms on any web app. Guides the user through each step — open a browser, navigate to the state you want tested, say ready. Works with any framework or stack.
 triggers:
   - "run accessibility audit"
   - "a11y audit"
@@ -56,6 +56,12 @@ The label (optional) is a short name for what's being audited — used in the re
 |---|---|
 | `--check` | Environment check — verifies Playwright MCP is connected, detects your project setup, and suggests the right command to start your first audit. Run this after installing the skill. |
 | `--wizard` | Interactive setup — Claude asks what you want to audit, explains each test, and walks you through the whole process in plain language before anything runs. Ideal for first-time users or when you're not sure which flags to use. |
+
+### Scope flags
+
+| Flag | What it does |
+|---|---|
+| `--wcag <target>` | WCAG version and level to target. Default: `2.2-AA`. Accepted values: `2.0-A`, `2.0-AA`, `2.0-AAA`, `2.1-A`, `2.1-AA`, `2.1-AAA`, `2.2-A`, `2.2-AA`, `2.2-AAA`. Affects the axe scan tag set and is recorded in the audit log and CSV. |
 
 ### Test flags
 
@@ -230,7 +236,7 @@ Wait for the user's answer. If they provide a label, set `LABEL` from it. If the
 
 > Here are the tests available. I'll briefly explain each one:
 >
-> **1. Axe automated scan** — Injects axe-core into the live page and checks for WCAG 2.2 AA violations automatically. Catches colour contrast failures, missing labels, invalid ARIA, nested interactive elements, and more. Fast, thorough, and the backbone of any audit.
+> **1. Axe automated scan** — Injects axe-core into the live page and checks for violations against the selected WCAG standard (default: 2.2 AA). Catches colour contrast failures, missing labels, invalid ARIA, nested interactive elements, and more. Fast, thorough, and the backbone of any audit.
 >
 > **2. Keyboard navigation** — I'll tab through the page and check that every interactive element is reachable, focus indicators are visible, tab order matches the visual layout, and dialogs close on Escape and return focus correctly.
 >
@@ -253,6 +259,18 @@ Wait for the user's answer. If they provide a label, set `LABEL` from it. If the
 > - **Custom** — tell me which numbers (e.g. "1 and 2", "just axe", "3 4 7")
 
 Wait for the user's answer. Set `RUN_CODE`, `RUN_KEYBOARD`, `RUN_NVDA`, `RUN_VOICEOVER`, `RUN_STRUCTURE`, `RUN_FORMS`, `RUN_STATIC` accordingly. If the user picks a custom selection, interpret it generously (e.g. "just axe" → `RUN_CODE` only).
+
+Then ask:
+
+> **Which WCAG version and level are we targeting?**
+>
+> Default is **WCAG 2.2 AA** — the current published standard, recommended for most projects.
+>
+> Other common targets: `2.1-AA` *(widely required by legislation)*, `2.0-AA` *(older baseline)*, `2.2-A` *(minimum level only)*, `2.2-AAA` *(enhanced — rarely required in full)*.
+>
+> Press Enter for the default, or type your target (e.g. `2.1-AA`).
+
+Wait for the response. Set `WCAG_TARGET` from the input, defaulting to `2.2-AA` if nothing is entered.
 
 ---
 
@@ -344,6 +362,8 @@ Set the following variables from the invocation flags:
 
 - `LABEL` = the label argument if provided; otherwise `PENDING` — the short URL will be used as the label once the browser is navigated in Step 4
 - `FULL_URL` = not yet set — will be captured from the browser in Step 4
+- `WCAG_TARGET` = the `--wcag` argument if provided; otherwise the `wcag.wcag` value from `a11y-config.md` if present; otherwise `2.2-AA`
+- `WCAG_TAGS` = the axe tag set derived from `WCAG_TARGET` — see table below
 - `RUN_STATIC` = true if `--static` was passed
 - `ANY_TEST_FLAG` = true if any of `--static`, `--code`, `--keyboard`, `--nvda`, `--voiceover`, `--structure`, `--forms` was passed
 - `RUN_CODE` = true if `--code` was explicitly passed, OR if `ANY_TEST_FLAG` is false
@@ -359,6 +379,22 @@ Set the following variables from the invocation flags:
 - `SCREENSHOT_PATH` = from `a11y-config.md` if specified; otherwise determined and confirmed in Step 1
 - `STATES_TESTED` = empty list — will accumulate each state tested this session
 - `ALL_FINDINGS` = empty list — will accumulate all findings across all states
+
+**WCAG_TAGS lookup** — derive from `WCAG_TARGET`:
+
+| WCAG_TARGET | axe tags |
+|---|---|
+| `2.0-A` | `['wcag2a']` |
+| `2.0-AA` | `['wcag2a', 'wcag2aa']` |
+| `2.0-AAA` | `['wcag2a', 'wcag2aa', 'wcag2aaa']` |
+| `2.1-A` | `['wcag2a', 'wcag21a']` |
+| `2.1-AA` | `['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']` |
+| `2.1-AAA` | `['wcag2a', 'wcag2aa', 'wcag2aaa', 'wcag21a', 'wcag21aa', 'wcag21aaa']` |
+| `2.2-A` | `['wcag2a', 'wcag21a']` *(no new A-level criteria in 2.2)* |
+| `2.2-AA` *(default)* | `['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa']` |
+| `2.2-AAA` | `['wcag2a', 'wcag2aa', 'wcag2aaa', 'wcag21a', 'wcag21aa', 'wcag21aaa', 'wcag22aa']` |
+
+Accept case-insensitive level input (`aa` = `AA`). If the value is unrecognised, default to `2.2-AA` and warn the user.
 
 **Checkpoint resume:** If `LABEL` is `PENDING`, skip this check — no checkpoint can exist without a resolved label. Otherwise, after setting `LABEL` and `SCREENSHOT_PATH`, check for a checkpoint file at `<SCREENSHOT_PATH>/a11y-<label-slug>-checkpoint.json`. If it exists, tell the user:
 
@@ -421,6 +457,7 @@ Wait for the response. If the user confirms or provides a path, set `SCREENSHOT_
 > **Accessibility audit ready**
 >
 > Auditing: *[LABEL — or "label will be set from page URL" if LABEL is PENDING]*
+> Standard: *[WCAG_TARGET e.g. "WCAG 2.2 AA"]*
 > Detected: *[framework + component library, or "unknown stack"]* · Lint: *[command or "none found"]*
 >
 > Tests queued: *[list active tests e.g. "axe · keyboard · structure · forms"]*
@@ -546,9 +583,11 @@ Where `<n>` is the iteration number (1 for the first state, 2 for the second, et
 **Skip if `RUN_CODE` is false.**
 
 Tell the user:
-> Running axe automated scan — checking for WCAG 2.2 AA violations in the current DOM...
+> Running axe automated scan — checking for *[WCAG_TARGET]* violations in the current DOM...
 
 Inject and run axe. **Re-inject after every `browser_navigate`** — it does not persist between navigations.
+
+Use `WCAG_TAGS` (derived in Step 0 from `WCAG_TARGET`) as the tag set for the scan.
 
 ```js
 const script = document.createElement('script');
@@ -556,7 +595,7 @@ script.src = 'https://cdnjs.cloudflare.com/ajax/libs/axe-core/4.10.3/axe.min.js'
 document.head.appendChild(script);
 await new Promise(resolve => script.onload = resolve);
 const results = await axe.run(document, {
-  runOnly: { type: 'tag', values: ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'] }
+  runOnly: { type: 'tag', values: WCAG_TAGS }  // set from WCAG_TARGET in Step 0
 });
 return {
   violations: results.violations.map(v => ({

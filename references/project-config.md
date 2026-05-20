@@ -43,6 +43,10 @@ notes: |
 
 notes: |
   Which flows or pages to prioritise in this audit.
+
+## WCAG Target
+
+wcag: 2.2-AA
 ```
 
 ---
@@ -59,6 +63,7 @@ notes: |
 | `lint.notes` | Pre-existing lint issues to ignore | None |
 | `navigation.notes` | Project-specific navigation constraints | None |
 | `scope.notes` | Which flows to prioritise | None |
+| `wcag.wcag` | Default WCAG version and level for all audits in this project | `2.2-AA` |
 
 ---
 

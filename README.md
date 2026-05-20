@@ -1,6 +1,6 @@
 # a11y-audit
 
-A Claude Code skill that runs a full **WCAG 2.2 AA** accessibility audit on any web application — automated axe scanning, keyboard navigation checks, NVDA screen reader testing, violation fixing, and audit log recording.
+A Claude Code skill that runs a **WCAG accessibility audit** on any web application — automated axe scanning, keyboard navigation checks, screen reader testing, violation fixing, and audit log recording. Targets WCAG 2.2 AA by default; configurable per project or per run with `--wcag`.
 
 Guides you through the whole process: Claude opens a browser, you navigate to the exact state you want tested (including logging in, opening dialogs, triggering error states), and then Claude runs the tests and reports findings. Multiple pages and states can be audited in a single session — findings accumulate into one report.
 
@@ -12,7 +12,7 @@ Works with React, Vue, Angular, Svelte, or plain HTML. Auto-detects framework, c
 
 1. **You navigate, Claude tests** — Claude opens a browser window and tells you what to do. You log in, open the right dialog, trigger the error state — whatever the test needs. When you're ready, Claude runs.
 2. **Takes baseline screenshots** before touching code (saved outside the repo)
-3. **Injects axe-core 4.10.3** via CDN and scans the current DOM for WCAG 2.2 AA violations
+3. **Injects axe-core 4.10.3** via CDN and scans the current DOM against the selected WCAG standard (default: 2.2 AA — change with `--wcag`)
 4. **Reports violations** grouped by impact: critical → serious → moderate → minor
 5. **Checks keyboard navigation** — tab order, Escape-to-close, focus return, dialog behaviour
 6. **NVDA screen reader check** *(optional, with `--nvda`)* — uses `nvda-testing-driver` (preferred) or NVDA Speech Viewer to capture spoken announcements. Windows only.
@@ -167,6 +167,7 @@ The label (optional) is a short name for what's being audited — used in the re
 /a11y-audit "footer" --static            # source analysis only (no browser needed)
 /a11y-audit "sign-up form" --voiceover  # VoiceOver screen reader check (macOS)
 /a11y-audit "sign-up form" --nvda       # NVDA screen reader check (Windows)
+/a11y-audit "dashboard" --wcag 2.1-AA   # target WCAG 2.1 AA instead of default 2.2
 ```
 
 ---
@@ -179,6 +180,12 @@ The label (optional) is a short name for what's being audited — used in the re
 |---|---|
 | `--check` | Environment check — verifies Playwright MCP is connected, detects your framework and lint command, checks screen reader availability for your OS, and suggests the right command to start your first audit. Run once after installing. No audit is started. |
 | `--wizard` | Interactive guided setup — Claude asks what you want to audit, explains each test in plain language, covers fix and report options, and walks through what will happen before anything runs. No flags to remember. Ideal for first-time users or unfamiliar audits. |
+
+### Scope
+
+| Flag | What it does |
+|---|---|
+| `--wcag <target>` | WCAG version and level to target. Default: `2.2-AA`. Examples: `--wcag 2.1-AA`, `--wcag 2.0-AA`, `--wcag 2.2-A`, `--wcag 2.2-AAA`. Drives the axe tag set and is recorded in the audit log and CSV report. |
 
 ### No additional requirements
 
@@ -422,7 +429,7 @@ See `references/project-config.md` for the full field reference and template.
 
 ---
 
-## WCAG 2.2 AA Coverage
+## WCAG Coverage (default: 2.2 AA)
 
 ### Automated (axe-core)
 
