@@ -1,6 +1,6 @@
 ---
 name: a11y-audit
-description: Run a full WCAG 2.2 AA accessibility audit (static analysis + axe-core + keyboard + NVDA + structure + forms) on any web app. Guides the user through each step — open a browser, navigate to the state you want tested, say ready. Works with any framework or stack.
+description: Run a full WCAG 2.2 AA accessibility audit (static analysis + axe-core + keyboard + NVDA + VoiceOver + structure + forms) on any web app. Guides the user through each step — open a browser, navigate to the state you want tested, say ready. Works with any framework or stack.
 triggers:
   - "run accessibility audit"
   - "a11y audit"
@@ -31,13 +31,13 @@ Works with any web framework or tech stack. Auto-detects project structure where
 /a11y-audit [label] [flags]
 ```
 
-The label (optional but recommended) is a short name for what's being audited — used in the report and screenshots. If omitted, Claude will ask.
+The label (optional) is a short name for what's being audited — used in the report and screenshots. If omitted, the short URL (e.g. `myapp.com/dashboard`) is used automatically once you navigate there.
 
 **Examples:**
 ```
 /a11y-audit --check                            # verify environment and get a suggested command
 /a11y-audit --wizard                           # guided setup — Claude walks you through everything
-/a11y-audit                                    # Claude will ask for a label
+/a11y-audit                                    # URL will be used as the label automatically
 /a11y-audit "sign-up form"                     # label provided
 /a11y-audit "settings page" --code             # axe scan only
 /a11y-audit "contact form" --fix               # all tests + auto-fix
@@ -170,7 +170,7 @@ Based on detected OS:
 
 | Playwright | OS | Suggestion |
 |---|---|---|
-| ✓ Connected | Windows | `/a11y-audit "[label]"` *(all 4 browser tests)* · add `--nvda` if NVDA is available · add `--static` if a JS framework was detected |
+| ✓ Connected | Windows | `/a11y-audit "[label]"` *(all 4 browser tests)* · add `--nvda` *(NVDA must be running — Speech Viewer mode works even without `nvda-testing-driver`)* · add `--static` if a JS framework was detected |
 | ✓ Connected | macOS | `/a11y-audit "[label]"` *(all 4 browser tests)* · add `--voiceover` · add `--static` if a JS framework was detected |
 | ✓ Connected | Linux / unknown | `/a11y-audit "[label]"` *(all 4 browser tests)* · add `--static` if a JS framework was detected |
 | ✗ Not connected | Any | `/a11y-audit "[label]" --static` *(source analysis only — no browser needed)* · explain how to set up Playwright MCP |
@@ -219,8 +219,10 @@ Check for `a11y-config.md` first — if present, note that it exists and that it
 > Give it a short name that describes the page, flow, or feature. This label will be used in the audit log and screenshots.
 >
 > Examples: `sign-up form`, `settings page`, `contact form`, `navigation menu`, `item selection dialog`
+>
+> *Press Enter to skip — I'll use the page URL as the label once you've navigated there.*
 
-Wait for the user's answer. Set `LABEL` from their response.
+Wait for the user's answer. If they provide a label, set `LABEL` from it. If they skip (press Enter, say "skip", or provide nothing), set `LABEL = PENDING`.
 
 ---
 
@@ -297,9 +299,11 @@ Wait for the response. Set `SCREENSHOT_PATH`. Create the folder if it doesn't al
 >
 > It'll be saved to your screenshots folder alongside the before/after images, and can be imported into a spreadsheet or issue tracker.
 >
-> **Yes / No**
+> - **Yes** — create or append to an existing report for this label
+> - **Yes, fresh** — delete any existing report for this label and start clean
+> - **No**
 
-Wait for the user's answer. Set `EXPORT_REPORT` accordingly.
+Wait for the user's answer. Set `EXPORT_REPORT` to true for "Yes" or "Yes, fresh". Set `FRESH_REPORT` to true for "Yes, fresh".
 
 ---
 
@@ -338,7 +342,8 @@ Check for `a11y-config.md` in the project root. If found, read it for project-sp
 
 Set the following variables from the invocation flags:
 
-- `LABEL` = the label argument, or ask the user: *"What would you like to call this audit session? (e.g. 'sign-up form', 'settings page', 'contact form')"*
+- `LABEL` = the label argument if provided; otherwise `PENDING` — the short URL will be used as the label once the browser is navigated in Step 4
+- `FULL_URL` = not yet set — will be captured from the browser in Step 4
 - `RUN_STATIC` = true if `--static` was passed
 - `ANY_TEST_FLAG` = true if any of `--static`, `--code`, `--keyboard`, `--nvda`, `--voiceover`, `--structure`, `--forms` was passed
 - `RUN_CODE` = true if `--code` was explicitly passed, OR if `ANY_TEST_FLAG` is false
@@ -355,7 +360,7 @@ Set the following variables from the invocation flags:
 - `STATES_TESTED` = empty list — will accumulate each state tested this session
 - `ALL_FINDINGS` = empty list — will accumulate all findings across all states
 
-**Checkpoint resume:** After setting `LABEL` and `SCREENSHOT_PATH`, check for a checkpoint file at `<SCREENSHOT_PATH>/a11y-<label-slug>-checkpoint.json`. If it exists, tell the user:
+**Checkpoint resume:** If `LABEL` is `PENDING`, skip this check — no checkpoint can exist without a resolved label. Otherwise, after setting `LABEL` and `SCREENSHOT_PATH`, check for a checkpoint file at `<SCREENSHOT_PATH>/a11y-<label-slug>-checkpoint.json`. If it exists, tell the user:
 
 > I found a saved checkpoint for "*[LABEL]*" from *[checkpoint date]*. It has *N* states tested and *N* findings recorded.
 >
@@ -389,7 +394,7 @@ Read `package.json` if present. If not present, note "no package.json found" and
 
 **Screenshot output path:**
 
-If `SCREENSHOT_PATH` is already set from `a11y-config.md`, skip this step.
+If `SCREENSHOT_PATH` is already set (from `a11y-config.md` or the wizard in Step 0W-5), skip this step.
 
 Otherwise, determine the OS-appropriate default:
 - Windows: `C:\Users\<username>\Pictures\a11y-screenshots\`
@@ -415,7 +420,7 @@ Wait for the response. If the user confirms or provides a path, set `SCREENSHOT_
 
 > **Accessibility audit ready**
 >
-> Auditing: *[LABEL]*
+> Auditing: *[LABEL — or "label will be set from page URL" if LABEL is PENDING]*
 > Detected: *[framework + component library, or "unknown stack"]* · Lint: *[command or "none found"]*
 >
 > Tests queued: *[list active tests e.g. "axe · keyboard · structure · forms"]*
@@ -449,6 +454,8 @@ Check `package.json` and the ESLint config for the plugin. Three states:
 
 Report findings grouped by rule ID then file. Note any violations likely to be caught by axe too — these are cross-validated findings.
 
+Add all violations to `ALL_FINDINGS` with `test_type: static` and `url: ""` (static findings are not tied to a specific browser URL).
+
 Tell the user the result:
 > Static analysis complete — *[N violations found / no violations]* *[(brief breakdown if any)]*
 
@@ -460,11 +467,13 @@ This phase repeats for each page or state the user wants to test. Each iteration
 
 #### Step 3: Open browser and guide the user
 
-Open the browser (navigate to `about:blank` to confirm Playwright is connected):
+**First state only** (when `STATES_TESTED` is empty): navigate to `about:blank` to open the browser and confirm Playwright is connected:
 
 ```
 browser_navigate → about:blank
 ```
+
+**Subsequent states** (when `STATES_TESTED` is not empty): the browser is already open. Do not navigate — the user will go to the next state themselves.
 
 Tell the user exactly what to do:
 
@@ -490,9 +499,36 @@ When the user says ready, take a snapshot to confirm the current state:
 browser_snapshot
 ```
 
+**Capture the URL.** Evaluate:
+```js
+browser_evaluate → window.location.href
+```
+
+Set `FULL_URL` = the full URL returned (e.g. `https://www.myapp.com/dashboard`).
+
+**If `LABEL` is `PENDING`**, derive the short URL label using these rules:
+- Strip protocol (`https://`, `http://`)
+- Strip `www.` prefix
+- Strip query string (everything from `?` onward)
+- Strip URL fragment (everything from `#` onward)
+- Strip trailing `/` if it's the root path only (no other path segments)
+- Keep port if non-standard (not 80 for http, not 443 for https)
+
+Examples:
+- `https://www.myapp.com/dashboard` → `myapp.com/dashboard`
+- `http://localhost:3000/settings` → `localhost:3000/settings`
+- `https://staging.myapp.com/` → `staging.myapp.com`
+- `https://app.example.com/users?page=2#section` → `app.example.com/users`
+
+Set `LABEL` = the derived short URL. From this point forward, `LABEL` is a real string and `PENDING` is cleared.
+
+Store `FULL_URL` in the per-state record so it is written to the checkpoint and CSV per finding.
+
 Tell the user what you can see and confirm the plan:
 
 > Got it — I can see *[description of the current page/state e.g. "the sign-up form" or "the settings page with the preferences panel open"]*
+>
+> *[If LABEL was PENDING: "I'll use "*[short URL]*" as the label for this state."]*
 >
 > I'll now run: *[list of active tests]*
 >
@@ -500,10 +536,10 @@ Tell the user what you can see and confirm the plan:
 
 Take a baseline screenshot:
 ```
-<output-path>/a11y-<label>-<state-slug>-<n>-before.png
+<output-path>/a11y-<label-slug>-<state-slug>-<n>-before.png
 ```
 
-Where `<n>` is the iteration number (1 for the first state, 2 for the second, etc.).
+Where `<n>` is the iteration number (1 for the first state, 2 for the second, etc.), and `<label-slug>` is the label with spaces replaced by hyphens and special characters (`.`, `/`, `:`) replaced by hyphens.
 
 #### Step 5: Axe scan *(runs when RUN_CODE is true)*
 
@@ -646,8 +682,11 @@ Summarise findings for this state:
 > | Axe | N |
 > | Keyboard | N |
 > | NVDA | N |
+> | VoiceOver | N |
 > | Structure | N |
 > | Forms | N |
+>
+> *[Only include a row for each test that actually ran this state — omit rows for tests that were not active.]*
 >
 > *[If issues: brief list of the most impactful findings]*
 >
@@ -672,10 +711,16 @@ Write `<SCREENSHOT_PATH>/a11y-<label-slug>-checkpoint.json` with the current `ST
   "date": "[today]",
   "screenshot_path": "[SCREENSHOT_PATH]",
   "tests": { "code": true/false, "keyboard": true/false, "nvda": true/false, "voiceover": true/false, "structure": true/false, "forms": true/false, "static": true/false },
-  "states_tested": [...],
-  "all_findings": [...]
+  "states_tested": [
+    { "label": "[LABEL]", "url": "[FULL_URL]", "findings_count": N }
+  ],
+  "all_findings": [
+    { "url": "[FULL_URL]", ... }
+  ]
 }
 ```
+
+Each state record includes `url` (the full URL from `browser_evaluate`) so the CSV can report the correct URL per finding across multi-state sessions.
 
 **If the user says ready:** go back to Step 3 for the next state.
 
@@ -736,7 +781,7 @@ After saving each file, wait for hot-reload, then:
 
 **1. Screenshot the affected state:**
 ```
-<output-path>/a11y-<label>-<state-slug>-after-pending.png
+<output-path>/a11y-<label-slug>-<state-slug>-after-pending.png
 ```
 
 **2. Generate a comparison page:**
@@ -812,7 +857,7 @@ If `VISUAL_REVIEW` is true, after-screenshots were already captured per file. Co
 
 If `VISUAL_REVIEW` is false, capture after-state for every before screenshot:
 ```
-<output-path>/a11y-<label>-<state-slug>-<n>-after.png
+<output-path>/a11y-<label-slug>-<state-slug>-<n>-after.png
 ```
 
 Tell the user:
@@ -826,6 +871,8 @@ Load `references/audit-log-format.md`. Always write an entry — even if no viol
 **If findings exist:** Append all findings from this session. Group by violation type across all states tested — a violation appearing in multiple states is one finding with multiple locations noted. Read existing entries to determine the next finding number. For deferred findings (visual regression or unfixable), use the deferred entry format.
 
 **If no findings:** Add a row to the Audits table noting the date, states tested, tests run, and "No violations found." This creates a record that the audit took place. No numbered findings are added to the Detailed Findings section.
+
+**URL in the Audits table:** Include the full URL (or URLs if multiple states were tested) in the URL column. If multiple states had different URLs, list them separated by semicolons.
 
 Also delete the checkpoint file (`<SCREENSHOT_PATH>/a11y-<label-slug>-checkpoint.json`) now that findings are safely recorded in the audit log.
 
@@ -849,7 +896,7 @@ Tell the user:
 
 Check whether a CSV for this label already exists in the screenshots folder:
 ```
-<output-path>/a11y-<label>.csv
+<output-path>/a11y-<label-slug>.csv
 ```
 
 - **`--fresh-report`:** delete the existing CSV first, then create it fresh with headers
@@ -905,6 +952,8 @@ Tell the user:
 
 **NVDA not running:** If the user says NVDA isn't ready, offer to skip the NVDA step and continue with other tests.
 
+**VoiceOver not enabled:** If the user says VoiceOver isn't running or the Caption Panel isn't visible, offer to skip the VoiceOver step and continue with other tests.
+
 **Fix fails after 3 attempts:** Tell the user specifically what was tried and why it failed. Mark the finding as deferred and continue.
 
 **Visual review comparison page fails to load:** Report the before/after image paths in the conversation and ask the user to open them manually. Continue the approval flow.
@@ -920,6 +969,7 @@ Tell the user:
 - [ ] Axe returns `count: 0` at every checkpoint *(if RUN_CODE and FIX_VIOLATIONS)*
 - [ ] All keyboard checks pass *(if RUN_KEYBOARD)*
 - [ ] NVDA checklist completed *(if RUN_NVDA)*
+- [ ] VoiceOver checklist completed *(if RUN_VOICEOVER)*
 - [ ] Structure report produced *(if RUN_STRUCTURE)*
 - [ ] Form report produced *(if RUN_FORMS)*
 - [ ] All fixes applied and re-verified *(if FIX_VIOLATIONS)*

@@ -15,18 +15,19 @@ Works with React, Vue, Angular, Svelte, or plain HTML. Auto-detects framework, c
 3. **Injects axe-core 4.10.3** via CDN and scans the current DOM for WCAG 2.2 AA violations
 4. **Reports violations** grouped by impact: critical → serious → moderate → minor
 5. **Checks keyboard navigation** — tab order, Escape-to-close, focus return, dialog behaviour
-6. **NVDA screen reader check** — uses `nvda-testing-driver` (preferred) or NVDA Speech Viewer mode to capture spoken announcements
-7. **Structure, heading, and table check** — heading hierarchy, table markup, and landmark/region structure
-8. **Form accessibility check** — labels, required fields, aria-invalid, aria-describedby, validation messages, field grouping
-9. **Static analysis** *(optional, with `--static`)* — ESLint a11y plugin scan of source files; no browser required
-10. **Loops across states** — after each state, Claude asks if there's another page or state to test; findings accumulate across the whole session
-11. **Fixes violations** *(optional, with `--fix`)* — applies targeted, framework-appropriate fixes to all found violations
-12. **Visual regression review** *(optional, with `--visual`)* — shows a side-by-side before/after comparison in the browser after each file is changed; you approve or reject before the change is kept
-13. **Re-verifies** to zero violations at every checkpoint
-14. **Takes after screenshots** for the audit record
-15. **Updates the audit log** with numbered findings in a consistent format
-16. **Runs lint** and confirms no new errors
-17. **Exports a CSV** of findings *(optional, with `--report`)*
+6. **NVDA screen reader check** *(optional, with `--nvda`)* — uses `nvda-testing-driver` (preferred) or NVDA Speech Viewer to capture spoken announcements. Windows only.
+7. **VoiceOver screen reader check** *(optional, with `--voiceover`)* — works through the VoiceOver checklist with you using the Caption Panel for text output. macOS only.
+8. **Structure, heading, and table check** — heading hierarchy, table markup, and landmark/region structure
+9. **Form accessibility check** — labels, required fields, aria-invalid, aria-describedby, validation messages, field grouping
+10. **Static analysis** *(optional, with `--static`)* — ESLint a11y plugin scan of source files; no browser required
+11. **Loops across states** — after each state, Claude asks if there's another page or state to test; findings accumulate across the whole session
+12. **Fixes violations** *(optional, with `--fix`)* — applies targeted, framework-appropriate fixes to all found violations
+13. **Visual regression review** *(optional, with `--visual`)* — shows a side-by-side before/after comparison in the browser after each file is changed; you approve or reject before the change is kept
+14. **Re-verifies** to zero violations at every checkpoint
+15. **Takes after screenshots** for the audit record
+16. **Updates the audit log** with numbered findings in a consistent format
+17. **Runs lint** and confirms no new errors
+18. **Exports a CSV** of findings *(optional, with `--report`)*
 
 ---
 
@@ -151,12 +152,12 @@ Claude will open a browser and tell you exactly what to do from there.
 /a11y-audit [label] [flags]
 ```
 
-The label (optional but recommended) is a short name for what's being audited — used in the report and screenshots. If omitted, Claude will ask.
+The label (optional) is a short name for what's being audited — used in the report and screenshots. If omitted, the short URL (e.g. `myapp.com/dashboard`) is used automatically once you navigate there.
 
 ```
 /a11y-audit --check                       # verify environment and get a suggested command
 /a11y-audit --wizard                      # guided setup — recommended for first-time users
-/a11y-audit                               # Claude will ask for a label
+/a11y-audit                               # URL will be used as the label automatically
 /a11y-audit "sign-up form"               # label provided, all tests
 /a11y-audit "settings page" --code       # axe scan only
 /a11y-audit "contact form" --fix         # all tests + auto-fix
@@ -204,12 +205,12 @@ The label (optional but recommended) is a short name for what's being audited �
 | `--fix` | After reporting, automatically fix all found violations. Use only when the source files are in your working directory. |
 | `--visual` | Like `--fix`, but opens a side-by-side before/after comparison in the browser after each file is changed — you approve or reject before the change is kept. Implies `--fix`. |
 
-### Requires Playwright MCP + NVDA
+### Requires a screen reader
 
 | Flag | What it does |
 |---|---|
-| `--nvda` | NVDA screen reader check — always opt-in, never runs by default. Uses `nvda-testing-driver` if installed, otherwise NVDA Speech Viewer. **Windows only.** |
-| `--voiceover` | VoiceOver screen reader check — always opt-in, never runs by default. Walks through `references/voiceover-checklist.md` with you using the VoiceOver Caption Panel for text output. Best results with Safari. **macOS only.** |
+| `--nvda` | NVDA screen reader check — always opt-in, never runs by default. Uses `nvda-testing-driver` if installed, otherwise NVDA Speech Viewer. **Windows only.** Requires NVDA installed. |
+| `--voiceover` | VoiceOver screen reader check — always opt-in, never runs by default. Walks through `references/voiceover-checklist.md` with you using the VoiceOver Caption Panel for text output. Best results with Safari. **macOS only.** VoiceOver is built-in — no install needed. |
 
 ---
 
@@ -327,6 +328,8 @@ Claude will walk you through everything in plain language before any tests run. 
 > First — **what are we auditing today?**
 >
 > Give it a short name that describes the page, flow, or feature. Examples: `sign-up form`, `settings page`, `contact form`, `item selection dialog`
+>
+> *Press Enter to skip — I'll use the page URL as the label once you've navigated there.*
 
 **Claude explains each test and asks which ones you want:**
 > Here are the tests available. I'll briefly explain each one:
@@ -395,6 +398,7 @@ This lets you catch any unintended visual side-effects from a fix before they la
 
 - **Claude Code** with the Playwright MCP server connected (for browser tests)
 - **NVDA** installed (Windows only) for `--nvda` — either `nvda-testing-driver` for automation or NVDA Speech Viewer for manual capture
+- **VoiceOver** (macOS only) for `--voiceover` — built-in, no install needed; enable with Cmd+F5 and set up the Caption Panel before running
 - **Source files in the working directory** for `--fix` and `--visual`
 
 No dev server configuration required — you navigate the browser yourself, so you control how to reach any page or state.
@@ -432,7 +436,7 @@ See `references/project-config.md` for the full field reference and template.
 | 2.4.3 Focus Order | `tabindex` |
 | 4.1.2 Name, Role, Value | `nested-interactive`, `dialog-name`, `button-name`, `aria-hidden-focus` |
 
-### Manual (keyboard + NVDA checks)
+### Manual (keyboard + screen reader checks)
 
 | Criterion | Check |
 |---|---|

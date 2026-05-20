@@ -36,9 +36,9 @@ Each audit covers the following dimensions:
 
 ## Audits
 
-| Date | Branch | Scope | Tool | Findings | Tester |
-|------|--------|-------|------|----------|--------|
-| [YYYY-MM-DD] | [branch] | [feature/page] | Playwright MCP + axe-core 4.10.3 | #1–#N | [name/Claude] |
+| Date | URL | Branch | Scope | Tool | Findings | Tester |
+|------|-----|--------|-------|------|----------|--------|
+| [YYYY-MM-DD] | [url] | [branch] | [feature/page] | Playwright MCP + axe-core 4.10.3 | #1–#N | [name/Claude] |
 
 ---
 
@@ -107,7 +107,7 @@ Each finding should be one numbered entry. Group systemic violations (same rule 
 
 After writing all findings, add a row to the Audits table:
 ```markdown
-| 2026-05-15 | feature/item-selection | Item selection dialogs | Playwright MCP + axe-core 4.10.3 | #7–#13 | Claude (Sonnet 4.6) |
+| 2026-05-15 | http://localhost:3000 | feature/item-selection | Item selection dialogs | Playwright MCP + axe-core 4.10.3 | #7–#13 | Claude (Sonnet 4.6) |
 ```
 
 Update the Summary totals. Count each finding once even if it spans multiple files.
@@ -165,6 +165,7 @@ Used by Step 15 when the `--report` flag is passed. Write one row per finding. S
 | `axe` | Axe-core rule ID | `nested-interactive` |
 | `keyboard` | `keyboard-check` | `keyboard-check` |
 | `nvda` | `nvda-check` | `nvda-check` |
+| `voiceover` | `voiceover-check` | `voiceover-check` |
 | `structure` | `heading-check` / `table-check` / `landmark-check` | `heading-check` |
 | `forms` | `label-check` / `required-check` / `validation-check` / `grouping-check` | `validation-check` |
 
