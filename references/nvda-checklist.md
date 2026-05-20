@@ -127,7 +127,7 @@ FORM FIELDS
     — NOT a 100+ character sentence as label
     Field 1 ([name]): _________________________________
     Field 2 ([name]): _________________________________
-[ ] helperText / description announced (aria-describedby)
+[ ] hint text / field description announced (aria-describedby)
     Actual: ___________________________________________
 [ ] Validation error announced without requiring focus
     Actual: ___________________________________________
@@ -197,7 +197,7 @@ FORM FIELDS
 -----------------------------------
 [ ] Each form field announces: label, type (text field / checkbox / select / etc.), required state
 [ ] Placeholder text is NOT used as the only label (it disappears on input)
-[ ] helperText / description is associated and announced (aria-describedby)
+[ ] hint text / field description is associated and announced (aria-describedby)
 [ ] Error messages are announced — either via aria-live or by focusing the error
 
 INTERACTIVE CONTROLS
@@ -265,8 +265,8 @@ Verdict:  [ ] PASS — no blocking issues
 | Dialog announces "dialog" with no title | `aria-labelledby` missing or pointing to wrong element | Add `aria-labelledby` pointing to dialog heading |
 | Button announces "button" only | Button has no text content and no `aria-label` | Add `aria-label` or visible text |
 | Field announces placeholder as label | No `<label>` or `aria-label` — only `placeholder` | Add explicit label |
-| List item announces full sentence | `label` prop has descriptive text that should be `helperText` | Shorten label, move text to `helperText` |
-| Dialog doesn't close on Escape | Missing `onClose` prop on Dialog component | Add `onClose` |
+| List item announces full sentence | Label text is too long — description mixed into the label | Shorten label; move descriptive text to a linked hint via `aria-describedby` |
+| Dialog doesn't close on Escape | No Escape key handler on the dialog | Add a keydown listener or `onClose` handler wired to Escape |
 | Step change not announced | No `aria-live` region for step announcements | Add live region to step announcer element |
 | Table column context missing | `<th>` cells not associated via `scope` or `id/headers` | Add `scope="col"` to `<th>` elements |
-| Icon button announces icon name | MUI SvgIcon title is read instead of intended label | Add `aria-label` and `aria-hidden="true"` on the icon |
+| Icon button announces icon name | SVG or icon element title is read instead of the intended label | Add `aria-label` on the button and `aria-hidden="true"` on the icon element |

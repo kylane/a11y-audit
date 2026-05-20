@@ -148,7 +148,7 @@ For each keyboard check, report:
 ```
 ✅ Tab order — all 12 interactive elements reachable, order matches visual layout
 ✅ Focus indicator — visible on all elements (blue outline, 2px offset)
-✅ Dialog: Add Grants — opens focused on first checkbox, Escape closes, focus returns to "Add grants" button
-❌ Dialog: Add Service — Escape key has no effect (missing onClose prop on Dialog)
+✅ Dialog: Select category — opens focused on first checkbox, Escape closes, focus returns to trigger button
+❌ Dialog: Add item — Escape key has no effect (missing onClose prop on Dialog)
 ❌ Step navigation — hidden sr-only div receives Tab focus between steps 1→2 (tabIndex={0} should be {-1})
 ```

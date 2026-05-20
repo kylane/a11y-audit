@@ -1,7 +1,6 @@
 # Accessibility Fix Patterns
 
-Patterns organised by axe rule ID, with framework-specific examples where relevant.
-Load this file during the fix phase of an a11y audit.
+Patterns organised by axe rule ID. Examples use generic HTML and framework-agnostic React — apply the same principle to whichever component library your project uses.
 
 **Target standard: WCAG 2.2 AA**
 
@@ -13,43 +12,39 @@ Load this file during the fix phase of an a11y audit.
 
 **WCAG:** 4.1.2 Name, Role, Value | **Impact:** Serious
 
-Caused by placing a checkbox, button, or input inside a clickable container (button, link, or element with `role="button"`). Assistive technologies cannot reliably interact with both.
+Caused by placing a checkbox, radio, button, or input inside a clickable container (a button, link, or element with `role="button"`). Assistive technologies cannot reliably interact with both.
 
-**MUI (React):**
-```tsx
-// ❌ Wrong — Checkbox inside ListItemButton (role="button")
-<ListItemButton onClick={() => toggle(item)}>
-  <Checkbox checked={isSelected(item)} tabIndex={-1} aria-hidden="true" />
-  <ListItemText primary={item.label} />
-</ListItemButton>
-
-// ✅ Correct — FormControlLabel with single interactive control
-<ListItem disablePadding divider={index < items.length - 1}>
-  <FormControlLabel
-    sx={{ width: '100%', mx: 0, px: 2, py: 0.5 }}
-    control={<Checkbox edge="start" checked={isSelected(item)} onChange={() => toggle(item)} />}
-    label={<ListItemText primary={item.id} secondary={item.label} />}
-  />
-</ListItem>
-```
-
-**Generic HTML:**
+**HTML:**
 ```html
-<!-- ❌ Wrong -->
+<!-- ❌ Wrong — checkbox nested inside a button-role container -->
 <div role="button" onclick="toggle()">
   <input type="checkbox" aria-hidden="true" tabindex="-1" />
-  <span>Label</span>
+  <span>Item label</span>
 </div>
 
-<!-- ✅ Correct -->
+<!-- ✅ Correct — label wraps a single interactive control -->
 <label>
   <input type="checkbox" onchange="toggle()" />
-  Label text
+  Item label
 </label>
 ```
 
-**Radix UI / Headless UI:**
-Use `Checkbox` root with a `label` element wrapping the whole thing, or use the library's `CheckboxItem` inside a proper list — do not nest inside `Button`.
+**React:**
+```tsx
+// ❌ Wrong — checkbox inside a clickable wrapper component
+<ClickableRow onClick={() => toggle(item)}>
+  <input type="checkbox" aria-hidden="true" tabIndex={-1} />
+  <span>{item.label}</span>
+</ClickableRow>
+
+// ✅ Correct — label as the outer element, single interactive control
+<label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}>
+  <input type="checkbox" checked={isSelected(item)} onChange={() => toggle(item)} />
+  <span>{item.label}</span>
+</label>
+```
+
+**Principle for component libraries:** Avoid wrapping a checkbox, radio, or input inside any component that renders a button or link. The fix in any library is the same — use a `<label>` as the outer interactive element, with the input inside it.
 
 ---
 
@@ -57,42 +52,24 @@ Use `Checkbox` root with a `label` element wrapping the whole thing, or use the 
 
 **WCAG:** 1.3.1 Info and Relationships | **Impact:** Moderate
 
-`<ul>` and `<ol>` must only contain `<li>` elements (or elements with `role="listitem"`). Dividers, wrappers, or elements with `role="presentation"` as direct children fail this rule.
+`<ul>` and `<ol>` must only contain `<li>` elements (or elements with `role="listitem"`). Dividers, wrappers, or non-list elements as direct children fail this rule.
 
-**MUI (React):**
-```tsx
-// ❌ Wrong — Divider renders <li role="presentation"> inside <ul>
-<List>
-  <ListItem>Item 1</ListItem>
-  <Divider component="li" />
-  <ListItem>Item 2</ListItem>
-</List>
-
-// ✅ Correct — divider prop applies CSS border, no extra DOM element
-<List>
-  {items.map((item, index) => (
-    <ListItem key={item.id} disablePadding divider={index < items.length - 1}>
-      ...
-    </ListItem>
-  ))}
-</List>
-```
-
-**Generic HTML:**
 ```html
-<!-- ❌ Wrong -->
+<!-- ❌ Wrong — hr or div as direct child of ul -->
 <ul>
   <li>Item 1</li>
-  <hr role="presentation" />
+  <hr />
   <li>Item 2</li>
 </ul>
 
 <!-- ✅ Correct — use CSS border on li instead -->
 <ul>
-  <li style="border-bottom: 1px solid #ccc;">Item 1</li>
+  <li style="border-bottom: 1px solid currentColor;">Item 1</li>
   <li>Item 2</li>
 </ul>
 ```
+
+**Component library note:** If your library renders a `<Divider>` component as a direct child of a list, replace it with a CSS border on the `<li>` element itself. The exact prop varies by library — check your library's list item docs for a `divider` or `border` prop.
 
 ---
 
@@ -103,68 +80,77 @@ Use `Checkbox` root with a `label` element wrapping the whole thing, or use the 
 Every `role="dialog"` must have an accessible name via `aria-labelledby` (preferred) or `aria-label`.
 
 **Common cause 1 — Missing `aria-labelledby`:**
-```tsx
-// ❌ Wrong
-<Dialog open={true}>
-  <DialogTitle>Add item</DialogTitle>
-</Dialog>
+```html
+<!-- ❌ Wrong -->
+<div role="dialog" aria-modal="true">
+  <h2>Add item</h2>
+</div>
 
-// ✅ Correct
-<Dialog open={true} aria-labelledby="dialogtitle">
-  <DialogTitle id="dialogtitle">Add item</DialogTitle>
-</Dialog>
+<!-- ✅ Correct -->
+<div role="dialog" aria-modal="true" aria-labelledby="dialog-title">
+  <h2 id="dialog-title">Add item</h2>
+</div>
 ```
 
-**Common cause 2 — HelpButton inside DialogTitle contaminates accessible name:**
+**Common cause 2 — Auxiliary element inside the title contaminates the accessible name:**
 
-When a `HelpButton` (with its own `aria-label`) is a child of `<DialogTitle>`, ARIA's accessible name computation traverses children and concatenates the HelpButton's label onto the dialog title.
+ARIA's accessible name computation traverses all children of the element referenced by `aria-labelledby`, including any nested interactive elements. A help button or icon inside the title element can append unexpected text to the dialog name (e.g. "Add item help" instead of "Add item").
 
-```tsx
-// ❌ Wrong — dialog announces "Add item Help" or similar
-<DialogTitle id="dialogtitle">
+```html
+<!-- ❌ Wrong — help button inside the title element -->
+<h2 id="dialog-title">
   Add item
-  <HelpButton aria-label="Help" />
-</DialogTitle>
+  <button aria-label="Help">?</button>
+</h2>
 
-// ✅ Correct — move HelpButton outside DialogTitle
-<Box sx={{ display: 'flex', alignItems: 'center', pr: 1 }}>
-  <DialogTitle id="dialogtitle" sx={{ flex: 1 }}>Add item</DialogTitle>
-  <HelpButton aria-label="Help" />
-</Box>
+<!-- ✅ Correct — move auxiliary controls outside the title element -->
+<div style="display: flex; align-items: center; gap: 8px;">
+  <h2 id="dialog-title" style="flex: 1;">Add item</h2>
+  <button aria-label="Help">?</button>
+</div>
 ```
 
 ---
 
-## `dialog-name` + missing `onClose` — Dialog not keyboard-dismissible
+## `dialog-name` + missing close handler — Dialog not keyboard-dismissible
 
 **WCAG:** 2.1.2 No Keyboard Trap | **Impact:** Serious
 
-A dialog without an `onClose` handler ignores both Escape key and backdrop click. Keyboard users cannot dismiss it without using an explicit close/cancel button — which may not exist in all states.
+A dialog without an Escape key handler traps keyboard users. They cannot dismiss it unless an explicit close button exists and is reachable.
 
-**MUI (React):**
+**React (component library with `onClose` prop):**
 ```tsx
 // ❌ Wrong — Escape key does nothing
-<Dialog open={true}>
+<Dialog open={open}>
 
-// ✅ Correct
-<Dialog open={true} onClose={props.onClose}>
+// ✅ Correct — wire up a close handler
+<Dialog open={open} onClose={handleClose}>
+```
+
+**Plain HTML / vanilla JS:**
+```js
+// ✅ Listen for Escape on the dialog element
+dialog.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') closeDialog()
+})
 ```
 
 **Backdrop click on data-entry dialogs:**
 
-For dialogs with significant form input, disable backdrop click to prevent accidental data loss while keeping Escape working:
+For dialogs with significant form input, you may want to prevent backdrop click while still allowing Escape. This avoids accidental data loss while keeping keyboard dismissal:
 
 ```tsx
+// React — distinguish reason when the library provides it
 <Dialog
-  open={true}
-  onClose={(_, reason) => {
+  open={open}
+  onClose={(event, reason) => {
     if (reason === 'backdropClick') return
-    props.onClose()
+    handleClose()
   }}
 >
 ```
 
-Use judgment: lightweight selection dialogs (a few checkboxes) can allow backdrop click. Heavy form dialogs (multiple fields, file uploads) should disable it.
+Use judgment: lightweight selection dialogs can allow backdrop click. Heavy form dialogs (multiple fields, file uploads) should disable it.
 
 ---
 
@@ -173,31 +159,33 @@ Use judgment: lightweight selection dialogs (a few checkboxes) can allow backdro
 **WCAG:** 1.3.1, 2.4.6 | **Impact:** Critical / Moderate
 
 **Missing label:**
-```tsx
-// ❌ Wrong
+```html
+<!-- ❌ Wrong -->
 <input type="text" placeholder="Search..." />
 
-// ✅ Correct — explicit label
-<label htmlFor="search">Search</label>
+<!-- ✅ Correct — explicit label element -->
+<label for="search">Search</label>
 <input id="search" type="text" placeholder="Search..." />
 
-// ✅ Correct — aria-label when visible label not possible
+<!-- ✅ Correct — aria-label when a visible label is not possible -->
 <input type="text" aria-label="Search" placeholder="Search..." />
 ```
 
 **Label too long (sentence used as field name):**
 
-Screen readers announce the label on every focus. A 100+ character sentence is disorienting.
+Screen readers announce the label on every focus. A 100+ character sentence is disorienting. Use a concise label and move the description to a linked hint element.
 
-```tsx
-// ❌ Wrong — full sentence as label
-<TextField label="The lead investigator of a research project, or the Principal Advisor of an HDR project, who must approve the record (cannot be an HDR student)" />
+```html
+<!-- ❌ Wrong — full sentence as label -->
+<label for="owner">
+  The person responsible for approving the record — must be the named lead on the project
+</label>
+<input id="owner" type="text" />
 
-// ✅ Correct — short label, description in helperText (linked via aria-describedby)
-<TextField
-  label="Lead Investigator"
-  helperText="The lead investigator of a research project, or the Principal Advisor of an HDR project..."
-/>
+<!-- ✅ Correct — concise label, description in a linked hint -->
+<label for="owner">Record owner</label>
+<input id="owner" type="text" aria-describedby="owner-hint" />
+<span id="owner-hint">Must be the named lead on the project</span>
 ```
 
 ---
@@ -213,10 +201,13 @@ A scrollable container that is not focusable cannot be scrolled by keyboard-only
 <div style="overflow-y: scroll; max-height: 300px;">...</div>
 
 <!-- ✅ Correct -->
-<div style="overflow-y: scroll; max-height: 300px;" tabindex="0" role="region" aria-label="Results list">...</div>
+<div
+  style="overflow-y: scroll; max-height: 300px;"
+  tabindex="0"
+  role="region"
+  aria-label="Results list"
+>...</div>
 ```
-
-In React/MUI, add `tabIndex={0}` and an appropriate `aria-label` to the scrollable `<Box>` or `<div>`.
 
 ---
 
@@ -224,18 +215,19 @@ In React/MUI, add `tabIndex={0}` and an appropriate `aria-label` to the scrollab
 
 **WCAG:** 1.4.3 Contrast (Minimum) | **Impact:** Serious
 
-Normal text requires 4.5:1 contrast ratio. Large text (18pt / 14pt bold) requires 3:1.
+Normal text requires a 4.5:1 contrast ratio against its background. Large text (18pt / 14pt bold) requires 3:1.
 
-**Do not use raw hex values — use theme tokens** (they are pre-validated for contrast):
-```tsx
-// ❌ Wrong — raw hex, contrast unverified
-<Typography sx={{ color: '#aaa' }}>Hint text</Typography>
+```css
+/* ❌ Wrong — light grey text on white, typically ~2.3:1 */
+.hint { color: #aaaaaa; }
 
-// ✅ Correct — theme token (verified against background)
-<Typography color="text.secondary">Hint text</Typography>
+/* ✅ Correct — darker grey that meets 4.5:1 on white */
+.hint { color: #767676; }
 ```
 
-To check a custom colour: use the [WebAIM Contrast Checker](https://webaim.org/resources/contrastchecker/) or the browser DevTools accessibility panel.
+To check a colour: use the [WebAIM Contrast Checker](https://webaim.org/resources/contrastchecker/) or the Accessibility panel in browser DevTools. Enter the foreground and background colours to get the ratio.
+
+**Common pitfall — hardcoded colours in component props:** Some component libraries accept a `color` prop that maps to internal theme tokens. If a token's foreground/background pairing doesn't meet contrast, fix it at the theme level rather than overriding per-component — that way the fix applies everywhere.
 
 ---
 
@@ -254,7 +246,7 @@ To check a custom colour: use the [WebAIM Contrast Checker](https://webaim.org/r
 <img src="divider.png" alt="" role="presentation" />
 ```
 
-In React: `<img alt="" />` (empty string, not missing) for decorative images.
+In React/JSX: `<img alt="" />` (empty string, not omitted) for decorative images.
 
 ---
 
@@ -262,18 +254,22 @@ In React: `<img alt="" />` (empty string, not missing) for decorative images.
 
 **WCAG:** 4.1.2 | **Impact:** Critical
 
-```tsx
-// ❌ Wrong — icon button with no label
-<IconButton onClick={onClose}>
-  <CloseIcon />
-</IconButton>
+```html
+<!-- ❌ Wrong — icon button with no text or label -->
+<button onclick="close()">
+  <svg>...</svg>
+</button>
 
-// ✅ Correct — aria-label or Tooltip wrapping
-<Tooltip title="Close">
-  <IconButton onClick={onClose} aria-label="Close">
-    <CloseIcon />
-  </IconButton>
-</Tooltip>
+<!-- ✅ Correct — aria-label -->
+<button onclick="close()" aria-label="Close">
+  <svg aria-hidden="true">...</svg>
+</button>
+
+<!-- ✅ Correct — visually hidden text (announced, not displayed) -->
+<button onclick="close()">
+  <svg aria-hidden="true">...</svg>
+  <span class="sr-only">Close</span>
+</button>
 ```
 
 ---
@@ -291,7 +287,7 @@ An element with `aria-hidden="true"` that is also focusable creates a confusing 
 // ✅ Option A — remove from tab order too
 <div aria-hidden="true" tabIndex={-1}>Hidden content</div>
 
-// ✅ Option B — don't hide it, just remove from tab order
+// ✅ Option B — don't hide it at all, just remove from tab order
 <div tabIndex={-1}>Content for programmatic focus only</div>
 ```
 
@@ -305,10 +301,14 @@ Major content areas should be wrapped in landmark elements to aid screen reader 
 
 ```html
 <!-- ✅ Use semantic landmarks -->
-<header> / <nav> / <main> / <section aria-label="..."> / <footer>
+<header>...</header>
+<nav aria-label="Primary navigation">...</nav>
+<main>...</main>
+<footer>...</footer>
 
-<!-- ✅ Or ARIA roles -->
-<div role="main"> / <div role="navigation" aria-label="Primary">
+<!-- ✅ Or explicit ARIA roles where semantic elements are not available -->
+<div role="main">...</div>
+<div role="navigation" aria-label="Primary">...</div>
 ```
 
 ---
@@ -317,14 +317,14 @@ Major content areas should be wrapped in landmark elements to aid screen reader 
 
 **WCAG:** 1.3.1 | **Impact:** Moderate
 
-Table header cells (`<th>`) must have visible text or an `aria-label`. An empty `<th>` (e.g. containing only an icon button) leaves the column without context.
+Table header cells (`<th>`) must have visible text or an `aria-label`. An empty `<th>` leaves the column without context for screen reader users.
 
-```tsx
-// ❌ Wrong — empty header cell
-<TableCell><HelpIconButton /></TableCell>
+```html
+<!-- ❌ Wrong — empty header cell -->
+<th></th>
 
-// ✅ Correct — explicit label
-<TableCell aria-label="Help"><HelpIconButton /></TableCell>
+<!-- ✅ Correct — explicit label -->
+<th aria-label="Actions"></th>
 ```
 
 ---
@@ -333,17 +333,17 @@ Table header cells (`<th>`) must have visible text or an `aria-label`. An empty 
 
 **WCAG:** 2.4.3 Focus Order | **Impact:** Moderate
 
-Positive `tabIndex` values (1, 2, 3...) override the natural DOM order and confuse keyboard users. Only ever use `tabIndex={0}` (in tab order, natural position) or `tabIndex={-1}` (programmatic focus only, not in tab order).
+Positive `tabindex` values (1, 2, 3...) override the natural DOM order and confuse keyboard users. Only ever use `0` (in tab order, natural position) or `-1` (programmatic focus only, not in tab order).
 
-```tsx
-// ❌ Wrong
-<button tabIndex={3}>Submit</button>
+```html
+<!-- ❌ Wrong -->
+<button tabindex="3">Submit</button>
 
-// ✅ Correct — rely on DOM order
+<!-- ✅ Correct — rely on DOM order -->
 <button>Submit</button>
 
-// ✅ Correct — programmatic focus target not in tab order
-<div ref={skipToRef} tabIndex={-1} className="sr-only" aria-live="polite">
+<!-- ✅ Correct — programmatic focus target not in tab order -->
+<div tabindex="-1" id="error-summary">...</div>
 ```
 
 ---
@@ -354,17 +354,19 @@ Not an axe rule — caught during keyboard/SR checks.
 
 Dynamic content that updates without a page reload (validation errors, step changes, notifications) must be announced to screen reader users via a live region.
 
-```tsx
-// ✅ Polite — waits for user to finish current interaction
-<div aria-live="polite" aria-atomic="true">
-  {statusMessage}
+```html
+<!-- ✅ Polite — waits for user to finish current interaction -->
+<div aria-live="polite" aria-atomic="true" id="status">
+  <!-- inject status messages here -->
 </div>
 
-// ✅ Assertive — interrupts immediately (use sparingly, for critical errors only)
-<div aria-live="assertive">
-  {criticalError}
+<!-- ✅ Assertive — interrupts immediately (use sparingly, for critical errors only) -->
+<div aria-live="assertive" id="error-alert">
+  <!-- inject critical errors here -->
 </div>
 ```
+
+The live region must be in the DOM **before** content is injected — not created dynamically at announcement time.
 
 Common locations: form validation summary, step/page change announcements, toast/snackbar messages, loading state changes.
 
@@ -400,8 +402,6 @@ The focus indicator must:
 }
 ```
 
-**MUI:** MUI's default focus-visible styles generally meet 2.4.11 when using theme colours. Custom components that override `:focus` or use `outline: none` need explicit remediation.
-
 **Check for sticky header clipping:** If a focused element scrolls under a sticky header, the focus indicator may be fully obscured — a violation. Fix with `scroll-margin-top` matching the header height:
 
 ```css
@@ -419,16 +419,16 @@ The focus indicator must:
 
 Any drag operation must have an equivalent single-pointer (click/tap) alternative.
 
-```tsx
-// ❌ Wrong — drag-to-reorder with no alternative
-<Draggable onDragEnd={reorder}>...</Draggable>
+```html
+<!-- ❌ Wrong — drag-to-reorder with no alternative -->
+<li draggable="true" ondragend="reorder(event)">Item</li>
 
-// ✅ Correct — add keyboard/click-based reorder controls
-<Draggable onDragEnd={reorder}>
-  <IconButton aria-label="Move up" onClick={() => moveUp(index)}><ArrowUpIcon /></IconButton>
-  <IconButton aria-label="Move down" onClick={() => moveDown(index)}><ArrowDownIcon /></IconButton>
-  ...
-</Draggable>
+<!-- ✅ Correct — add keyboard/click-based reorder controls alongside drag -->
+<li draggable="true" ondragend="reorder(event)">
+  <button aria-label="Move up" onclick="moveUp(index)">↑</button>
+  <button aria-label="Move down" onclick="moveDown(index)">↓</button>
+  Item content
+</li>
 ```
 
 ---
@@ -446,17 +446,16 @@ Check with `browser_evaluate`:
 document.querySelector('[aria-label="Close"]').getBoundingClientRect()
 ```
 
-**MUI fix:** MUI `IconButton` defaults to 40px — no issue. Custom small buttons or icon-only links may need `minWidth`/`minHeight`:
+```css
+/* ❌ Wrong — icon with no padding, renders below 24px */
+.action-btn { padding: 0; width: 16px; height: 16px; }
 
-```tsx
-// ❌ Wrong — 16px icon with no padding
-<Box component="button" sx={{ p: 0 }}><CloseIcon fontSize="small" /></Box>
-
-// ✅ Correct — ensure minimum 24px target
-<IconButton size="small" aria-label="Close">
-  <CloseIcon fontSize="small" />
-</IconButton>
-// MUI IconButton size="small" renders at 34px — meets requirement
+/* ✅ Correct — ensure minimum 24×24px target area */
+.action-btn {
+  min-width: 24px;
+  min-height: 24px;
+  padding: 4px;
+}
 ```
 
 ---
@@ -465,19 +464,21 @@ document.querySelector('[aria-label="Close"]').getBoundingClientRect()
 
 **WCAG:** 3.3.7 Redundant Entry | **Impact:** AA
 
-In a multi-step process, information already entered by the user in the same session must not need to be re-entered unless:
-- Re-entry is essential (e.g. confirming a password)
-- The info was provided in a different context where re-use would be inappropriate
+In a multi-step process, information already entered by the user in the same session must not need to be re-entered unless re-entry is essential (e.g. confirming a password).
 
-**Fix:** Pre-populate fields in later steps with values from earlier steps. Use form state management (React Hook Form `defaultValues`, context, or session storage) to carry values forward.
+**Fix:** Pre-populate fields in later steps with values from earlier steps using session state, URL state, or a shared store:
+
+```js
+// Vanilla JS — read from session storage set in step 1
+const step1Data = JSON.parse(sessionStorage.getItem('step1') ?? '{}')
+document.getElementById('project-title').value = step1Data.title ?? ''
+```
 
 ```tsx
-// ✅ Pre-populate from earlier step data
-const { data: recordData } = useGetDraftRecord(recordId)
-<TextField
-  label="Project title"
-  defaultValue={recordData?.title}  // pre-filled from step 1
-/>
+// React — pass earlier step data as default values
+function Step2({ step1Data }) {
+  return <input id="title" defaultValue={step1Data.title} />
+}
 ```
 
 ---

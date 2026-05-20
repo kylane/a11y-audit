@@ -92,13 +92,13 @@ Each finding should be one numbered entry. Group systemic violations (same rule 
 ## Example Finding
 
 ```markdown
-### #7 — HIGH: `nested-interactive` violation in grants and ethics selection dialogs
+### #7 — HIGH: `nested-interactive` violation in item selection dialogs
 
-- **Files:** `SelectGrantsDialog.tsx`, `SelectHumanEthicsDialog.tsx`, `SelectAnimalEthicsDialog.tsx`
+- **Files:** `ItemSelectionDialog.tsx`, `CategorySelectionDialog.tsx`
 - **Axe rule:** `nested-interactive` (WCAG 4.1.2 — Name, Role, Value)
 - **Impact:** Serious
-- **Description:** Items were built using `ListItemButton` (renders as `role="button"`) containing a `Checkbox` input. WCAG prohibits interactive controls nested inside other interactive controls. Even `aria-hidden="true"` + `tabIndex={-1}` on the checkbox does not satisfy axe — the `<input>` element inside a `[role="button"]` is flagged regardless.
-- **Fix:** Replaced `ListItemButton + Checkbox` with `FormControlLabel + Checkbox` inside a plain `ListItem`. `FormControlLabel` wraps a single `<label>` element around the checkbox — one interactive element, no nesting. Applied across all three dialogs.
+- **Description:** Items were built using a clickable container component (renders as `role="button"`) containing a `<input type="checkbox">`. WCAG prohibits interactive controls nested inside other interactive controls. Even `aria-hidden="true"` + `tabIndex={-1}` on the checkbox does not satisfy axe — the `<input>` element inside a `[role="button"]` is flagged regardless.
+- **Fix:** Replaced the clickable wrapper with a `<label>` element enclosing the checkbox — one interactive element, no nesting. Applied across both dialogs.
 ```
 
 ---
@@ -107,7 +107,7 @@ Each finding should be one numbered entry. Group systemic violations (same rule 
 
 After writing all findings, add a row to the Audits table:
 ```markdown
-| 2026-05-15 | ethics-validation | Create record wizard + ethics/service dialogs | Playwright MCP + axe-core 4.10.3 | #7–#13 | Claude (Sonnet 4.6) |
+| 2026-05-15 | feature/item-selection | Item selection dialogs | Playwright MCP + axe-core 4.10.3 | #7–#13 | Claude (Sonnet 4.6) |
 ```
 
 Update the Summary totals. Count each finding once even if it spans multiple files.
@@ -128,4 +128,69 @@ If a finding is identified but deliberately not fixed (e.g. too complex, third-p
 - **Reason not fixed:** [Explain why — third-party component, excessive complexity, accepted risk, business decision]
 - **Owner:** [Who is responsible for revisiting]
 - **Review date:** [When to check again]
+```
+
+---
+
+## CSV Export Format
+
+Used by Step 15 when the `--report` flag is passed. Write one row per finding. Save the file to the screenshots output path as `a11y-<feature>-<YYYY-MM-DD>.csv`.
+
+### Columns
+
+| Column | Description | Example |
+|---|---|---|
+| `date` | Audit date (YYYY-MM-DD) | `2026-05-20` |
+| `url` | URL that was audited | `http://localhost:3000` |
+| `environment` | `local` (dev server, source modifiable) or `live` (remote URL, read-only) | `local` |
+| `branch` | Git branch at time of audit. Leave blank when auditing a remote URL. | `feature/item-selection` |
+| `feature` | Feature or page audited | `item selection dialog` |
+| `finding` | Finding number | `#7` |
+| `test_type` | Source of the finding | `static` / `axe` / `keyboard` / `nvda` / `structure` / `forms` |
+| `rule_id` | Rule or check identifier — see table below | `nested-interactive` |
+| `wcag_criterion` | WCAG success criterion number. Leave blank if not directly mappable. | `4.1.2` |
+| `impact` | Severity of the finding | `critical` / `serious` / `moderate` / `minor` |
+| `severity` | Human-readable severity label (maps from impact) | `High / Serious` |
+| `cross_validated` | `true` if caught by both `--static` and `--code` (axe). Otherwise blank. | `true` |
+| `files` | Affected source files, semicolon-separated. Blank for live URL audits where source is unavailable. | `ItemSelectionDialog.tsx;CategorySelectionDialog.tsx` |
+| `description` | Short description of the violation | `Checkbox nested inside clickable container` |
+| `status` | Resolution status | `fixed` / `deferred` / `open` |
+| `notes` | Fix applied, reason deferred, or owner/review date for deferred findings | `Replaced container with label element wrapping checkbox` |
+
+### `rule_id` values by test type
+
+| `test_type` | `rule_id` format | Example |
+|---|---|---|
+| `static` | ESLint plugin rule ID | `jsx-a11y/label-has-associated-control` |
+| `axe` | Axe-core rule ID | `nested-interactive` |
+| `keyboard` | `keyboard-check` | `keyboard-check` |
+| `nvda` | `nvda-check` | `nvda-check` |
+| `structure` | `heading-check` / `table-check` / `landmark-check` | `heading-check` |
+| `forms` | `label-check` / `required-check` / `validation-check` / `grouping-check` | `validation-check` |
+
+### Severity mapping
+
+| Finding source | `impact` | `severity` |
+|---|---|---|
+| `axe` — critical | `critical` | Critical |
+| `axe` — serious | `serious` | High / Serious |
+| `axe` — moderate | `moderate` | Medium / Moderate |
+| `axe` — minor | `minor` | Low / Minor |
+| `static` | Use the ESLint rule severity (`error` → serious, `warn` → minor) | High / Serious or Low / Minor |
+| `keyboard` | `serious` if focus is blocked or lost; `minor` otherwise | High / Serious or Low / Minor |
+| `nvda` | `serious` if content is unannounced or misleading; `minor` otherwise | High / Serious or Low / Minor |
+| `structure` | `serious` if heading hierarchy is broken or landmark is missing; `minor` for labelling issues | High / Serious or Low / Minor |
+| `forms` | `serious` if error messages are unlinked or required fields unmarked; `minor` for grouping/autocomplete | High / Serious or Low / Minor |
+
+### Example rows
+
+```csv
+date,url,environment,branch,feature,finding,test_type,rule_id,wcag_criterion,impact,severity,cross_validated,files,description,status,notes
+2026-05-20,http://localhost:3000,local,feature/item-selection,item selection dialog,#7,axe,nested-interactive,4.1.2,serious,High / Serious,true,ItemSelectionDialog.tsx;CategorySelectionDialog.tsx,Checkbox nested inside clickable container,fixed,Replaced container with label element wrapping checkbox
+2026-05-20,http://localhost:3000,local,feature/item-selection,item selection dialog,#7,static,jsx-a11y/no-interactive-element-to-noninteractive-role,4.1.2,serious,High / Serious,true,ItemSelectionDialog.tsx,Interactive element assigned non-interactive role,fixed,Same fix as axe finding — cross-validated
+2026-05-20,http://localhost:3000,local,feature/item-selection,item selection dialog,#8,keyboard,keyboard-check,2.1.1,serious,High / Serious,,ItemSelectionDialog.tsx,Escape key does not close dialog,fixed,Added onClose handler wired to Escape keydown
+2026-05-20,http://localhost:3000,local,feature/item-selection,item selection dialog,#9,nvda,nvda-check,,minor,Low / Minor,,ItemSelectionDialog.tsx,Dialog title not announced on open,deferred,Third-party component limitation — owner: UX team — review 2026-08-01
+2026-05-20,http://localhost:3000,local,feature/item-selection,item selection dialog,#10,structure,heading-check,1.3.1,serious,High / Serious,,ItemsPage.tsx,h3 appears before any h2 — skipped heading level,fixed,Corrected heading hierarchy
+2026-05-20,http://localhost:3000,local,feature/item-selection,item selection dialog,#11,forms,validation-check,3.3.1,serious,High / Serious,,ItemForm.tsx,Error message not linked via aria-describedby,fixed,Added aria-describedby linking field to error element
+2026-05-20,https://myapp.example,live,,item selection dialog,#12,axe,color-contrast,1.4.3,serious,High / Serious,,,Text contrast ratio 3.1:1 below 4.5:1 minimum,open,Deferred — source not accessible for live audit
 ```

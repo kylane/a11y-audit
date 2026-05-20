@@ -11,54 +11,38 @@ Copy and fill in only the values you need. Omit any field to use auto-detection.
 ```markdown
 # a11y-config.md — Accessibility Audit Configuration
 
-## Dev Server
-
-url: http://localhost:3000
-
-## Auth
-
-instructions: |
-  Log in as "uqtest" (super user). Navigate to http://localhost:3000 and use the
-  sidebar to reach any page — never type route paths directly. Session expires after
-  ~5 minutes of inactivity; return to home page to re-trigger auth.
-
 ## Screenshots
 
-output_path: C:\Users\<username>\Pictures\a11y-screenshots\
+output_path: C:\Users\yourname\Pictures\a11y-screenshots\
 
 ## Audit Log
 
-path: docs/ux/AUDIT_LOG.md
+path: docs/accessibility/AUDIT_LOG.md
 
 ## Component Library
 
-library: MUI (Material UI v9)
+library: [your component library name and version]
 notes: |
-  - Use FormControlLabel + Checkbox instead of ListItemButton + Checkbox for selectable lists
-  - Use ListItem divider prop instead of Divider component="li"
-  - Use sx={{ color: ... }} not color= prop on Typography for custom colours
-  - HelpButton placed inside DialogTitle contaminates accessible name — move outside
+  - Any project-specific fix patterns or known component quirks go here
+  - For example: which component to use instead of a known inaccessible pattern
 
 ## Lint
 
-command: rtk nx lint web
+command: npm run lint
 notes: |
-  Pre-existing lint issues (do not flag as new):
-  - ServiceCollaboratorPermissions.tsx — setState-in-effect error
-  - FormStepper.tsx — two `any` type warnings
+  Pre-existing lint issues to ignore (do not flag as new):
+  - List any known pre-existing violations here so they aren't reported as new findings
 
 ## Navigation
 
 notes: |
-  Never guess or type route paths. Use the sidebar navigation.
-  Check apps/web/src/routes.tsx only to verify a path — still navigate via the app UI.
-  Standard user accounts (e.g. uqjdoe) crash on ethics, admin, and graduate school pages.
+  Any project-specific navigation constraints — e.g. which test account to use,
+  whether certain routes require specific permissions, or areas to avoid.
 
 ## Scope Notes
 
 notes: |
-  Focus on flows that involve dialogs and multi-step forms.
-  The create-record wizard and ethics application wizard are the highest-priority flows.
+  Which flows or pages to prioritise in this audit.
 ```
 
 ---
@@ -67,8 +51,6 @@ notes: |
 
 | Field | Description | Default if omitted |
 |---|---|---|
-| `url` | Dev server base URL | Auto-detected from config files, or `http://localhost:3000` |
-| `auth.instructions` | How to authenticate | Ask the user |
 | `screenshots.output_path` | Where to save screenshots (must be outside the repo) | OS-appropriate temp path |
 | `audit_log.path` | Path to the audit log file | Auto-detected, or `docs/accessibility/AUDIT_LOG.md` |
 | `component_library.library` | Primary component library name | Auto-detected from package.json |
