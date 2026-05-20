@@ -233,7 +233,7 @@ When you run the skill, here's what a typical session looks like:
 >
 > Default: `C:\Users\you\Pictures\a11y-screenshots\`
 >
-> Press Enter to use the default, or type a different path.
+> Type a different path, or reply `default` to use the path shown above.
 
 You confirm the path (or type a new one), and Claude creates the folder if it doesn't exist.
 
@@ -336,7 +336,7 @@ Claude will walk you through everything in plain language before any tests run. 
 >
 > Give it a short name that describes the page, flow, or feature. Examples: `sign-up form`, `settings page`, `contact form`, `item selection dialog`
 >
-> *Press Enter to skip — I'll use the page URL as the label once you've navigated there.*
+> *Type `skip` if you don't have a label yet — I'll derive one from the URL when you navigate there.*
 
 **Claude explains each test and asks which ones you want:**
 > Here are the tests available. I'll briefly explain each one:

@@ -226,9 +226,9 @@ Check for `a11y-config.md` first — if present, note that it exists and that it
 >
 > Examples: `sign-up form`, `settings page`, `contact form`, `navigation menu`, `item selection dialog`
 >
-> *Press Enter to skip — I'll use the page URL as the label once you've navigated there.*
+> *Type `skip` if you don't have a label yet — I'll derive one from the URL when you navigate there.*
 
-Wait for the user's answer. If they provide a label, set `LABEL` from it. If they skip (press Enter, say "skip", or provide nothing), set `LABEL = PENDING`.
+Wait for the user's answer. If they provide a label, set `LABEL` from it. If they say "skip", send a blank message, or provide nothing, set `LABEL = PENDING`.
 
 ---
 
@@ -268,9 +268,9 @@ Then ask:
 >
 > Other common targets: `2.1-AA` *(widely required by legislation)*, `2.0-AA` *(older baseline)*, `2.2-A` *(minimum level only)*, `2.2-AAA` *(enhanced — rarely required in full)*.
 >
-> Press Enter for the default, or type your target (e.g. `2.1-AA`).
+> Type your target (e.g. `2.1-AA`), or reply `default` to use 2.2 AA.
 
-Wait for the response. Set `WCAG_TARGET` from the input, defaulting to `2.2-AA` if nothing is entered.
+Wait for the response. Set `WCAG_TARGET` from the input, defaulting to `2.2-AA` if the user replies "default", sends a blank message, or provides nothing.
 
 ---
 
@@ -305,9 +305,9 @@ Wait for the user's answer. Set `FIX_VIOLATIONS` and `VISUAL_REVIEW` accordingly
 > - Windows: `C:\Users\[your-username]\Pictures\a11y-screenshots\`
 > - macOS/Linux: `~/Pictures/a11y-screenshots/`
 >
-> Press Enter to use the default, or type a different path.
+> Type a different path, or reply `default` to use the path shown above.
 
-Wait for the response. Set `SCREENSHOT_PATH`. Create the folder if it doesn't already exist.
+Wait for the response. Set `SCREENSHOT_PATH` to the typed path, or to the platform default if the user replies "default", sends a blank message, or provides nothing. Create the folder if it doesn't already exist.
 
 ---
 
@@ -444,9 +444,9 @@ Then ask the user:
 >
 > Default: `[detected-default-path]`
 >
-> Press Enter to use the default, or type a different path.
+> Type a different path, or reply `default` to use the path shown above.
 
-Wait for the response. If the user confirms or provides a path, set `SCREENSHOT_PATH`. Create the folder if it doesn't already exist.
+Wait for the response. Set `SCREENSHOT_PATH` to the typed path, or to the platform default if the user replies "default", sends a blank message, or provides nothing. Create the folder if it doesn't already exist.
 
 **Audit log:**
 - Check in order: `docs/ux/AUDIT_LOG.md` → `docs/AUDIT_LOG.md` → `AUDIT_LOG.md` → `.accessibility/audit-log.md`
