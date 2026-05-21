@@ -28,6 +28,7 @@ Works with React, Vue, Angular, Svelte, or plain HTML. Auto-detects framework, c
 16. **Updates the audit log** with numbered findings in a consistent format
 17. **Runs lint** and confirms no new errors
 18. **Exports a CSV** of findings *(optional, with `--report`)*
+19. **Generates a remediation plan** *(optional, with `--plan`)* — a shareable Markdown document with prioritised findings, recommended fixes, and next steps
 
 ---
 
@@ -35,16 +36,32 @@ Works with React, Vue, Angular, Svelte, or plain HTML. Auto-detects framework, c
 
 ### 1. Install
 
+If the skill is already available in your Claude Code session, run the guided installer:
+
+```
+/a11y-audit --install
+```
+
+Claude will ask whether you want to install for **this project only** or **globally** (all projects), then output the exact commands to run.
+
+**Or install manually:**
+
 ```bash
-# Clone to your skills directory
-git clone https://github.com/lanedigital/a11y-audit ~/.agents/skills/a11y-audit
-
-# Symlink into Claude Code's skills directory
+# This project only — available when working in this directory
 # macOS / Linux
-ln -s ~/.agents/skills/a11y-audit ~/.claude/skills/a11y-audit
+git clone https://github.com/lanedigital/a11y-audit .claude/skills/a11y-audit
 
-# Windows (run as Administrator, or use Developer Mode)
-New-Item -ItemType SymbolicLink -Path "$env:USERPROFILE\.claude\skills\a11y-audit" -Target "$env:USERPROFILE\.agents\skills\a11y-audit"
+# Windows (PowerShell)
+git clone https://github.com/lanedigital/a11y-audit .claude\skills\a11y-audit
+```
+
+```bash
+# Global — available in all Claude Code projects
+# macOS / Linux
+git clone https://github.com/lanedigital/a11y-audit ~/.claude/skills/a11y-audit
+
+# Windows (PowerShell)
+git clone https://github.com/lanedigital/a11y-audit "$env:USERPROFILE\.claude\skills\a11y-audit"
 ```
 
 ### 2. Set up Playwright MCP
@@ -155,6 +172,7 @@ Claude will open a browser and tell you exactly what to do from there.
 The label (optional) is a short name for what's being audited — used in the report and screenshots. If omitted, the short URL (e.g. `myapp.com/dashboard`) is used automatically once you navigate there.
 
 ```
+/a11y-audit --install                     # guided install — choose project or global, get the commands
 /a11y-audit --check                       # verify environment and get a suggested command
 /a11y-audit --wizard                      # guided setup — recommended for first-time users
 /a11y-audit                               # URL will be used as the label automatically
@@ -164,6 +182,8 @@ The label (optional) is a short name for what's being audited — used in the re
 /a11y-audit "navigation menu" --visual   # all tests + visual review per fix
 /a11y-audit "profile page" --static --code # source analysis + axe
 /a11y-audit "main nav" --report          # all tests + CSV export
+/a11y-audit "sign-up form" --plan        # all tests + shareable remediation plan
+/a11y-audit "checkout" --report --plan   # all tests + CSV + remediation plan
 /a11y-audit "footer" --static            # source analysis only (no browser needed)
 /a11y-audit "sign-up form" --voiceover  # VoiceOver screen reader check (macOS)
 /a11y-audit "sign-up form" --nvda       # NVDA screen reader check (Windows)
@@ -178,6 +198,7 @@ The label (optional) is a short name for what's being audited — used in the re
 
 | Flag | What it does |
 |---|---|
+| `--install` | Installation guide — asks whether to install for this project or globally, then outputs the exact commands to run. No audit is started. |
 | `--check` | Environment check — verifies Playwright MCP is connected, detects your framework and lint command, checks screen reader availability for your OS, and suggests the right command to start your first audit. Run once after installing. No audit is started. |
 | `--wizard` | Interactive guided setup — Claude asks what you want to audit, explains each test in plain language, covers fix and report options, and walks through what will happen before anything runs. No flags to remember. Ideal for first-time users or unfamiliar audits. |
 
@@ -194,6 +215,7 @@ The label (optional) is a short name for what's being audited — used in the re
 | `--static` | ESLint a11y plugin scan of source files — no browser, no dev server. Works standalone. Catches click-without-keyboard-handler, invalid ARIA in source, and issues in components not reached during live testing. Installs the right plugin for your framework if needed. |
 | `--report` | Writes a CSV of all findings to the screenshots folder. Works with any combination of other flags. |
 | `--fresh-report` | Like `--report`, but deletes any existing CSV for this label before writing — starts a clean report rather than appending. |
+| `--plan` | Generates a Markdown remediation plan — prioritised findings, recommended fixes, and next steps — saved to the screenshots folder. Ready to share with a team, client, or drop into a ticket. |
 
 ### Requires Playwright MCP
 

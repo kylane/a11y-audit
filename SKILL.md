@@ -54,6 +54,7 @@ The label (optional) is a short name for what's being audited — used in the re
 
 | Flag | What it does |
 |---|---|
+| `--install` | Installation guide — asks where to install the skill (current project or global), then outputs the exact commands to run. Exits after printing commands — no audit is started. |
 | `--check` | Environment check — verifies Playwright MCP is connected, detects your project setup, and suggests the right command to start your first audit. Run this after installing the skill. |
 | `--wizard` | Interactive setup — Claude asks what you want to audit, explains each test, and walks you through the whole process in plain language before anything runs. Ideal for first-time users or when you're not sure which flags to use. |
 
@@ -89,6 +90,7 @@ The label (optional) is a short name for what's being audited — used in the re
 |---|---|
 | `--report` | Generate or update a CSV report in the screenshots folder with all findings from this session. |
 | `--fresh-report` | Like `--report`, but deletes any existing CSV for this label before writing — starts a clean report rather than appending. |
+| `--plan` | Generate a Markdown remediation plan — a shareable document with prioritised findings, recommended fixes, and next steps. Saved alongside the CSV in the screenshots folder. |
 
 Test flags can be combined freely. `--static` works without a browser and can be combined with browser tests. `--fix` and `--visual` assume source code is in the working directory — do not use them when auditing a site you cannot modify.
 
@@ -97,6 +99,61 @@ Test flags can be combined freely. `--static` works without a browser and can be
 ## Implementation
 
 ### Phase 1: Setup
+
+#### Step 0I: Installation *(runs when `--install` is passed — exits after printing commands, does not start an audit)*
+
+When the user passes `--install`, do not start an audit. Instead, guide them through installation.
+
+Note the current working directory. Then ask:
+
+> **Where would you like to install the a11y-audit skill?**
+>
+> - **This project** (default) — `.claude/skills/a11y-audit/` inside your current project
+>   Available only in this directory.
+>
+> - **Global** — `~/.claude/skills/a11y-audit/` (macOS/Linux) or `$env:USERPROFILE\.claude\skills\a11y-audit` (Windows)
+>   Available across all your Claude Code projects.
+>
+> - **Custom path** — type a directory and I'll use it.
+
+Wait for the response. Then output the appropriate commands:
+
+**This project (macOS/Linux):**
+```bash
+git clone https://github.com/lanedigital/a11y-audit .claude/skills/a11y-audit
+```
+
+**This project (Windows):**
+```powershell
+git clone https://github.com/lanedigital/a11y-audit .claude\skills\a11y-audit
+```
+
+**Global (macOS/Linux):**
+```bash
+git clone https://github.com/lanedigital/a11y-audit ~/.claude/skills/a11y-audit
+```
+
+**Global (Windows):**
+```powershell
+git clone https://github.com/lanedigital/a11y-audit "$env:USERPROFILE\.claude\skills\a11y-audit"
+```
+
+**Custom:** substitute the user-provided path for the destination.
+
+Then add:
+
+> **Next steps after running that command:**
+>
+> 1. Add Playwright MCP to `~/.claude/settings.json` if you haven't already — see the README for the config block
+> 2. Run `npx playwright install` to download browser binaries
+> 3. Restart Claude Code
+> 4. Run `/a11y-audit --check` to verify the setup
+>
+> Then start your first audit with `/a11y-audit --wizard`
+
+After printing the instructions, stop. Do not proceed to Step 0C, Step 0W, or Step 0.
+
+---
 
 #### Step 0C: Environment check *(runs when `--check` is passed — exits after reporting, does not start an audit)*
 
@@ -325,6 +382,19 @@ Wait for the user's answer. Set `EXPORT_REPORT` to true for "Yes" or "Yes, fresh
 
 ---
 
+**0W-6b — Remediation plan?**
+
+> Would you like a shareable remediation plan at the end of the session?
+>
+> It's a Markdown document — prioritised findings, recommended fixes, and next steps — ready to hand off to a developer, share with a client, or drop into a ticket. Saved alongside the CSV in your screenshots folder.
+>
+> - **Yes**
+> - **No**
+
+Wait for the user's answer. Set `EXPORT_PLAN` to true for "Yes".
+
+---
+
 **0W-7 — Explain the process**
 
 > Here's what's going to happen next:
@@ -341,7 +411,7 @@ Wait for the user's answer. Set `EXPORT_REPORT` to true for "Yes" or "Yes, fresh
 >
 > **5. After each state, I'll ask if there's another page or state to add** — so you can cover multiple flows in one session. Findings accumulate into a single report.
 >
-> **6. At the end**, I'll record all findings in the audit log*[, fix violations]*[, and generate a CSV report]*.
+> **6. At the end**, I'll record all findings in the audit log*[, fix violations]*[, generate a CSV report]*[, and generate a remediation plan]*.
 >
 > Ready to go? Say **yes** to start, or ask any questions first.
 
@@ -376,6 +446,7 @@ Set the following variables from the invocation flags:
 - `VISUAL_REVIEW` = true if `--visual` was passed
 - `EXPORT_REPORT` = true if `--report` or `--fresh-report` was passed
 - `FRESH_REPORT` = true if `--fresh-report` was passed
+- `EXPORT_PLAN` = true if `--plan` was passed
 - `SCREENSHOT_PATH` = from `a11y-config.md` if specified; otherwise determined and confirmed in Step 1
 - `STATES_TESTED` = empty list — will accumulate each state tested this session
 - `ALL_FINDINGS` = empty list — will accumulate all findings across all states
@@ -464,6 +535,21 @@ Otherwise ask:
 
 Wait for the response. Set `EXPORT_REPORT` to true for "Yes" or "Yes, fresh". Set `FRESH_REPORT` to true for "Yes, fresh".
 
+**Remediation plan:**
+
+If `EXPORT_PLAN` is already set (from `--plan` flag), skip this.
+
+Otherwise ask:
+
+> **Would you like a shareable remediation plan at the end?**
+>
+> A Markdown document with prioritised findings, recommended fixes, and next steps — ready to hand off to a developer, share with a client, or drop into a ticket. Saved to your screenshots folder.
+>
+> - **Yes**
+> - **No**
+
+Wait for the response. Set `EXPORT_PLAN` to true for "Yes".
+
 **Audit log:**
 - Check in order: `docs/ux/AUDIT_LOG.md` → `docs/AUDIT_LOG.md` → `AUDIT_LOG.md` → `.accessibility/audit-log.md`
 - If none found: create `docs/accessibility/AUDIT_LOG.md` using the template in `references/audit-log-format.md`
@@ -478,6 +564,7 @@ Wait for the response. Set `EXPORT_REPORT` to true for "Yes" or "Yes, fresh". Se
 >
 > Tests queued: *[list active tests e.g. "axe · keyboard · structure · forms"]*
 > Mode: *[e.g. "report only" or "fix" or "fix with visual review"]*
+> Outputs: *[list active outputs — e.g. "audit log · CSV · remediation plan"]*
 >
 > Screenshots will be saved to: *[path]*
 > Findings will be added to: *[audit log path]*
@@ -967,6 +1054,91 @@ Tell the user:
 
 ---
 
+#### Step 17.5: Remediation plan *(runs when EXPORT_PLAN is true)*
+
+**Skip if `EXPORT_PLAN` is false.**
+
+Tell the user:
+> Generating remediation plan...
+
+Write a Markdown file to:
+```
+<output-path>/a11y-<label-slug>-remediation-plan.md
+```
+
+Use this structure:
+
+```markdown
+# Accessibility Remediation Plan — [LABEL]
+
+**Audit date:** [today]
+**WCAG target:** [WCAG_TARGET]
+**States audited:** [list each label and URL]
+**Tests run:** [list active tests]
+
+---
+
+## Summary
+
+| Severity | Count |
+|---|---|
+| Critical | N |
+| Serious | N |
+| Moderate | N |
+| Minor | N |
+| **Total** | **N** |
+
+*[If no findings: "No violations were found across all tested states."]*
+
+---
+
+## Findings
+
+*[Group findings by severity — critical first. For each finding:]*
+
+### [Impact] — [Violation name / rule ID]
+
+**WCAG criterion:** [e.g. 1.3.1 Info and Relationships (Level A)]
+**Affected pages:**
+- [URL or state label] — [element or selector, e.g. `<input type="checkbox"> inside <button>`]
+
+**What's wrong:** [plain-language description of the problem]
+
+**How to fix:** [concrete fix guidance — what the correct markup or pattern looks like]
+
+**Status:** [Open / Fixed / Deferred — visual regression / Deferred — unfixable after 3 attempts]
+
+---
+*[repeat for each finding]*
+
+## Next Steps
+
+*[If open findings remain:]*
+- Address critical and serious findings before the next release
+- Run `/a11y-audit "[LABEL]" --fix` to apply fixes automatically, or work through the findings manually using the guidance above
+- Re-run the audit after fixes to verify
+
+*[If all fixed:]*
+- All findings have been addressed in this session
+- Run your full test suite and consider committing the changes
+- Re-audit after the next significant UI change
+
+*[If no findings:]*
+- No violations were found — no action required
+- Re-audit after the next significant UI change
+
+---
+
+*Generated by [a11y-audit](https://github.com/lanedigital/a11y-audit) · [today]*
+```
+
+Tell the user:
+> Remediation plan saved: *[full file path]*
+>
+> Share this file with your team, attach it to a ticket, or use it to track remediation progress.
+
+---
+
 #### Step 18: Session close
 
 Tell the user:
@@ -978,6 +1150,8 @@ Tell the user:
 > *[If no findings: "No violations were found — great result."]*
 >
 > Files changed: *[list, or "none"]*
+> *[If EXPORT_REPORT:]* CSV report: *[path]*
+> *[If EXPORT_PLAN:]* Remediation plan: *[path]*
 >
 > **Next steps:**
 > *[If open findings remain:]* "There are *N* open findings in the audit log. Run `/a11y-audit [label] --fix` to address them."
@@ -1033,4 +1207,5 @@ Tell the user:
 - [ ] Audit log updated with all findings from this session
 - [ ] Lint passes with no new errors *(if FIX_VIOLATIONS)*
 - [ ] CSV report created or updated *(if EXPORT_REPORT)*
+- [ ] Remediation plan generated *(if EXPORT_PLAN)*
 - [ ] No files committed unless explicitly asked
