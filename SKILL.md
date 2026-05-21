@@ -341,7 +341,7 @@ Use `AskUserQuestion` with 1 question:
 - Header: `Screenshots`
 - Note before options: "Must be outside your project folder — file watchers trigger hot-reload on every write."
 - Option 1 — label: `Default`, description: the detected default path
-- *(User types a custom path via the automatic "Other" option)*
+- Option 2 — label: `Custom path`, description: `Type a path in the "Other" field — must be outside the project folder`
 
 Set `SCREENSHOT_PATH` to the typed path, or to the platform default if "Default" is chosen. Create the folder if it doesn't already exist.
 
@@ -488,7 +488,7 @@ Build a single `AskUserQuestion` call containing whichever of these three questi
 **Question: "Where would you like screenshots saved?"**
 - Header: `Screenshots`
 - Option 1 — label: `Default`, description: the detected default path (e.g. `C:\Users\ky\Pictures\a11y-screenshots\`)
-- *(User types a custom path via the automatic "Other" option)*
+- Option 2 — label: `Custom path`, description: `Type a path in the "Other" field — must be outside the project folder to avoid triggering hot-reload`
 
 Set `SCREENSHOT_PATH` to the typed path, or to the platform default if "Default" is chosen. Create the folder if it doesn't already exist.
 
