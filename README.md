@@ -172,11 +172,13 @@ Claude will open a browser and tell you exactly what to do from there.
 The label (optional) is a short name for what's being audited — used in the report and screenshots. If omitted, the short URL (e.g. `myapp.com/dashboard`) is used automatically once you navigate there.
 
 ```
-/a11y-audit --install                     # guided install — choose project or global, get the commands
-/a11y-audit --check                       # verify environment and get a suggested command
-/a11y-audit --wizard                      # guided setup — recommended for first-time users
-/a11y-audit                               # URL will be used as the label automatically
-/a11y-audit "sign-up form"               # label provided, all tests
+/a11y-audit --install                                        # guided install — choose project or global, get the commands
+/a11y-audit --check                                          # verify environment and get a suggested command
+/a11y-audit --wizard                                         # guided setup — recommended for first-time users
+/a11y-audit --url https://myapp.com/sign-up                  # open URL directly and run all tests
+/a11y-audit "sign-up form" --url https://myapp.com/sign-up   # same, with explicit label
+/a11y-audit                                                  # URL will be used as the label automatically
+/a11y-audit "sign-up form"                                   # label provided, all tests
 /a11y-audit "settings page" --code       # axe scan only
 /a11y-audit "contact form" --fix         # all tests + auto-fix
 /a11y-audit "navigation menu" --visual   # all tests + visual review per fix
@@ -206,6 +208,7 @@ The label (optional) is a short name for what's being audited — used in the re
 
 | Flag | What it does |
 |---|---|
+| `--url <url>` | Open the browser directly to this URL and start testing immediately — no manual navigation step. The label is derived from the URL if not provided. Subsequent states in the same session still use manual navigation. |
 | `--wcag <target>` | WCAG version and level to target. Default: `2.2-AA`. Examples: `--wcag 2.1-AA`, `--wcag 2.0-AA`, `--wcag 2.2-A`, `--wcag 2.2-AAA`. Drives the axe tag set and is recorded in the audit log and CSV report. |
 
 ### No additional requirements

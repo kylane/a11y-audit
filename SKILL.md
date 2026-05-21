@@ -62,6 +62,7 @@ The label (optional) is a short name for what's being audited — used in the re
 
 | Flag | What it does |
 |---|---|
+| `--url <url>` | Open the browser directly to this URL and run tests immediately — no manual navigation required. If no label is provided, it is derived from the URL automatically. Subsequent states in the session still use manual navigation. |
 | `--wcag <target>` | WCAG version and level to target. Default: `2.2-AA`. Accepted values: `2.0-A`, `2.0-AA`, `2.0-AAA`, `2.1-A`, `2.1-AA`, `2.1-AAA`, `2.2-A`, `2.2-AA`, `2.2-AAA`. Affects the axe scan tag set and is recorded in the audit log and CSV. |
 
 ### Test flags
@@ -431,6 +432,7 @@ Check for `a11y-config.md` in the project root. If found, read it for project-sp
 Set the following variables from the invocation flags:
 
 - `LABEL` = the label argument if provided; otherwise `PENDING` — the short URL will be used as the label once the browser is navigated in Step 4
+- `AUTO_URL` = the `--url` argument if provided; otherwise empty
 - `FULL_URL` = not yet set — will be captured from the browser in Step 4
 - `WCAG_TARGET` = the `--wcag` argument if provided; otherwise the `wcag.wcag` value from `a11y-config.md` if present; otherwise `2.2-AA`
 - `WCAG_TAGS` = the axe tag set derived from `WCAG_TARGET` — see table below
@@ -607,13 +609,26 @@ This phase repeats for each page or state the user wants to test. Each iteration
 
 #### Step 3: Open browser and guide the user
 
-**First state only** (when `STATES_TESTED` is empty): navigate to `about:blank` to open the browser and confirm Playwright is connected:
+**If `AUTO_URL` is set and `STATES_TESTED` is empty (first state, URL provided):**
 
+Navigate directly to the URL:
+```
+browser_navigate → AUTO_URL
+```
+
+Tell the user:
+> Opened *[AUTO_URL]* — running tests now.
+
+Proceed immediately to Step 4 without waiting for the user.
+
+---
+
+**If `AUTO_URL` is empty and `STATES_TESTED` is empty (first state, no URL provided):**
+
+Navigate to `about:blank` to open the browser:
 ```
 browser_navigate → about:blank
 ```
-
-**Subsequent states** (when `STATES_TESTED` is not empty): the browser is already open. Do not navigate — the user will go to the next state themselves.
 
 Tell the user exactly what to do:
 
@@ -628,6 +643,18 @@ Tell the user exactly what to do:
 > 6. Get the browser into exactly the state you want audited
 >
 > When everything looks right, say **ready**.
+
+Wait. Do not proceed until the user confirms.
+
+---
+
+**Subsequent states** (when `STATES_TESTED` is not empty): the browser is already open. Do not navigate — the user will go to the next state themselves.
+
+Tell the user:
+
+> **Is there another page or state you'd like to add?**
+>
+> Navigate there in the browser and say **ready**, or say **done** to finish.
 
 Wait. Do not proceed until the user confirms.
 
