@@ -134,7 +134,7 @@ If a finding is identified but deliberately not fixed (e.g. too complex, third-p
 
 ## CSV Export Format
 
-Used by Step 15 when the `--report` flag is passed. Write one row per finding. Save the file to the screenshots output path as `a11y-<feature>-<YYYY-MM-DD>.csv`.
+Used by Step 15 when the `--report` flag is passed. Write one row per finding. Save the file to `SCREENSHOT_PATH` (default: `a11y-screenshots/` in the project root) as `a11y-<feature>-<YYYY-MM-DD>.csv`.
 
 ### Columns
 

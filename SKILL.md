@@ -89,9 +89,9 @@ The label (optional) is a short name for what's being audited — used in the re
 
 | Flag | Description |
 |---|---|
-| `--report` | Generate or update a CSV report in the screenshots folder with all findings from this session. |
+| `--report` | Generate or update a CSV report in `a11y-screenshots/` with all findings from this session. |
 | `--fresh-report` | Like `--report`, but deletes any existing CSV for this label before writing — starts a clean report rather than appending. |
-| `--plan` | Generate a Markdown remediation plan — a shareable document with prioritised findings, recommended fixes, and next steps. Saved alongside the CSV in the screenshots folder. |
+| `--plan` | Generate a Markdown remediation plan — a shareable document with prioritised findings, recommended fixes, and next steps. Saved alongside the CSV in `a11y-screenshots/`. |
 
 Test flags can be combined freely. `--static` works without a browser and can be combined with browser tests. `--fix` and `--visual` assume source code is in the working directory — do not use them when auditing a site you cannot modify.
 
@@ -331,19 +331,16 @@ Set `FIX_VIOLATIONS` = true for Fix automatically or Fix with visual review. Set
 
 **0W-5 — Where to save files?**
 
-Determine the OS-appropriate default path:
-- Windows: `C:\Users\<username>\Pictures\a11y-screenshots\`
-- macOS/Linux: `~/Pictures/a11y-screenshots/`
+The default is `a11y-screenshots/` inside the project root. Playwright MCP can only write files within the project directory, so external paths (e.g. `Pictures/`) are silently ignored and screenshots fall back to the project root. The `a11y-screenshots/` folder is gitignored so screenshots never get committed accidentally.
 
 Use `AskUserQuestion` with 1 question:
 
-**Question: "Where would you like screenshots and temporary files saved?"**
+**Question: "Where would you like screenshots saved?"**
 - Header: `Screenshots`
-- Note before options: "Must be outside your project folder — file watchers trigger hot-reload on every write."
-- Option 1 — label: `Default`, description: the detected default path
-- Option 2 — label: `Custom path`, description: `Type a path in the "Other" field — must be outside the project folder`
+- Option 1 — label: `Default (a11y-screenshots/)`, description: `Saved inside the project root — gitignored, works reliably with Playwright MCP`
+- Option 2 — label: `Custom path`, description: `Type a subfolder path in the "Other" field — must be within the project directory (Playwright MCP restriction)`
 
-Set `SCREENSHOT_PATH` to the typed path, or to the platform default if "Default" is chosen. Create the folder if it doesn't already exist.
+Set `SCREENSHOT_PATH` to the typed path, or to `a11y-screenshots/` inside the project root if "Default" is chosen. Create the folder if it doesn't already exist.
 
 ---
 
@@ -477,9 +474,7 @@ Read `package.json` if present. If not present, note "no package.json found" and
 
 If `SCREENSHOT_PATH` is already set (from `a11y-config.md` or the wizard in Step 0W-5), skip this step.
 
-Otherwise, determine the OS-appropriate default:
-- Windows: `C:\Users\<username>\Pictures\a11y-screenshots\`
-- macOS/Linux: `~/Pictures/a11y-screenshots/`
+Otherwise, default to `a11y-screenshots/` inside the project root. Playwright MCP can only write files within the project directory — paths outside it (e.g. `~/Pictures/`) are silently rejected and screenshots fall back to the project root. The `a11y-screenshots/` folder is gitignored.
 
 **Setup questions — ask all at once using `AskUserQuestion`:**
 
@@ -487,10 +482,10 @@ Build a single `AskUserQuestion` call containing whichever of these three questi
 
 **Question: "Where would you like screenshots saved?"**
 - Header: `Screenshots`
-- Option 1 — label: `Default`, description: the detected default path (e.g. `C:\Users\ky\Pictures\a11y-screenshots\`)
-- Option 2 — label: `Custom path`, description: `Type a path in the "Other" field — must be outside the project folder to avoid triggering hot-reload`
+- Option 1 — label: `Default (a11y-screenshots/)`, description: `Saved inside the project root — gitignored, works reliably with Playwright MCP`
+- Option 2 — label: `Custom path`, description: `Type a subfolder path in the "Other" field — must be within the project directory (Playwright MCP restriction)`
 
-Set `SCREENSHOT_PATH` to the typed path, or to the platform default if "Default" is chosen. Create the folder if it doesn't already exist.
+Set `SCREENSHOT_PATH` to the typed path, or to `a11y-screenshots/` inside the project root if "Default" is chosen. Create the folder if it doesn't already exist.
 
 **Question: "Would you like a CSV report at the end?"** *(skip if `EXPORT_REPORT` already set)*
 - Header: `CSV report`
@@ -1151,7 +1146,7 @@ Tell the user:
 
 - **Never navigate the browser without the user's instruction** — the user drives navigation; Claude drives testing
 - **Never submit forms or trigger destructive actions** without warning the user first
-- **Never save screenshots or temp files inside the project folder**
+- **Save screenshots to `a11y-screenshots/` inside the project root** — Playwright MCP cannot write outside the project directory; `a11y-screenshots/` is gitignored so screenshots are never committed accidentally
 - **Never save the same source file more than once per fix** — batch all changes into one edit per file
 - **Never commit without explicit user instruction**
 - **Re-inject axe after every `browser_navigate`** — it does not persist between navigations
@@ -1187,7 +1182,7 @@ Tell the user:
 - [ ] Form report produced *(if RUN_FORMS)*
 - [ ] All fixes applied and re-verified *(if FIX_VIOLATIONS)*
 - [ ] All fixes approved via visual review *(if VISUAL_REVIEW)*
-- [ ] Before/after screenshots saved externally *(if FIX_VIOLATIONS)*
+- [ ] Before/after screenshots saved to `a11y-screenshots/` *(if FIX_VIOLATIONS)*
 - [ ] Audit log updated with all findings from this session
 - [ ] Lint passes with no new errors *(if FIX_VIOLATIONS)*
 - [ ] CSV report created or updated *(if EXPORT_REPORT)*

@@ -13,7 +13,7 @@ Copy and fill in only the values you need. Omit any field to use auto-detection.
 
 ## Screenshots
 
-output_path: C:\Users\yourname\Pictures\a11y-screenshots\
+output_path: a11y-screenshots/
 
 ## Audit Log
 
@@ -55,7 +55,7 @@ wcag: 2.2-AA
 
 | Field | Description | Default if omitted |
 |---|---|---|
-| `screenshots.output_path` | Where to save screenshots (must be outside the repo) | OS-appropriate temp path |
+| `screenshots.output_path` | Where to save screenshots — must be within the project directory (Playwright MCP restriction) | `a11y-screenshots/` in project root (gitignored) |
 | `audit_log.path` | Path to the audit log file | Auto-detected, or `docs/accessibility/AUDIT_LOG.md` |
 | `component_library.library` | Primary component library name | Auto-detected from package.json |
 | `component_library.notes` | Project-specific fix patterns | None |
