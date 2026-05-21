@@ -292,107 +292,79 @@ Wait for the user's answer. If they provide a label, set `LABEL` from it. If the
 
 **0W-3 — Which tests?**
 
-> Here are the tests available. I'll briefly explain each one:
->
-> **1. Axe automated scan** — Injects axe-core into the live page and checks for violations against the selected WCAG standard (default: 2.2 AA). Catches colour contrast failures, missing labels, invalid ARIA, nested interactive elements, and more. Fast, thorough, and the backbone of any audit.
->
-> **2. Keyboard navigation** — I'll tab through the page and check that every interactive element is reachable, focus indicators are visible, tab order matches the visual layout, and dialogs close on Escape and return focus correctly.
->
-> **3. Structure** — Checks that heading levels don't skip (h1 → h2 → h3), tables have proper header markup, and landmark regions (nav, main, footer) are present and correctly labelled.
->
-> **4. Forms** — Checks that every field has a label, required fields are marked up correctly, validation errors are linked to their fields via `aria-describedby`, and error messages describe the problem clearly.
->
-> **5. NVDA screen reader** — Drives the browser with NVDA running alongside and checks what gets announced for key interactions. Requires NVDA installed. **Windows only.**
->
-> **6. VoiceOver screen reader** — Same coverage as NVDA but using Apple VoiceOver and Safari. No install needed — VoiceOver is built into macOS. **macOS only.**
->
-> **7. Static analysis** — Scans your source files with an ESLint a11y plugin — no browser or dev server needed. Catches issues in components that might not be reachable during live testing, and cross-validates findings from the live scan.
->
-> ---
-> Which would you like? Options:
-> - **All browser tests** (1–4, recommended — works everywhere)
-> - **All + screen reader** (1–4 + 5 if Windows, or 1–4 + 6 if macOS)
-> - **All + static** (1–4 + 7)
-> - **Everything** (1–7)
-> - **Custom** — tell me which numbers (e.g. "1 and 2", "just axe", "3 4 7")
+Use `AskUserQuestion` with 2 questions:
 
-Wait for the user's answer. Set `RUN_CODE`, `RUN_KEYBOARD`, `RUN_NVDA`, `RUN_VOICEOVER`, `RUN_STRUCTURE`, `RUN_FORMS`, `RUN_STATIC` accordingly. If the user picks a custom selection, interpret it generously (e.g. "just axe" → `RUN_CODE` only).
+**Question: "Which tests would you like to run?"**
+- Header: `Tests`
+- Option 1 — label: `All browser tests`, description: `Axe · keyboard · structure · forms — recommended, works everywhere`
+- Option 2 — label: `All + screen reader`, description: `All browser tests plus NVDA (Windows) or VoiceOver (macOS)`
+- Option 3 — label: `All + static`, description: `All browser tests plus ESLint source file scan`
+- Option 4 — label: `Everything`, description: `All browser tests + screen reader + static analysis`
+- *(User selects a custom set via the automatic "Other" option — interpret generously e.g. "just axe" → RUN_CODE only)*
 
-Then ask:
+Set `RUN_CODE`, `RUN_KEYBOARD`, `RUN_NVDA`, `RUN_VOICEOVER`, `RUN_STRUCTURE`, `RUN_FORMS`, `RUN_STATIC` from the answer.
 
-> **Which WCAG version and level are we targeting?**
->
-> Default is **WCAG 2.2 AA** — the current published standard, recommended for most projects.
->
-> Other common targets: `2.1-AA` *(widely required by legislation)*, `2.0-AA` *(older baseline)*, `2.2-A` *(minimum level only)*, `2.2-AAA` *(enhanced — rarely required in full)*.
->
-> Type your target (e.g. `2.1-AA`), or reply `default` to use 2.2 AA.
+**Question: "Which WCAG standard are we targeting?"**
+- Header: `WCAG target`
+- Option 1 — label: `2.2 AA`, description: `Default — current published standard, recommended for most projects`
+- Option 2 — label: `2.1 AA`, description: `Widely required by accessibility legislation`
+- Option 3 — label: `2.0 AA`, description: `Older baseline, broadly supported`
+- *(User types a custom target e.g. `2.2-AAA` via "Other")*
 
-Wait for the response. Set `WCAG_TARGET` from the input, defaulting to `2.2-AA` if the user replies "default", sends a blank message, or provides nothing.
+Set `WCAG_TARGET` from the answer, defaulting to `2.2-AA` if nothing is provided.
 
 ---
 
 **0W-4 — Fix mode?**
 
-> After I report the findings, what would you like to do with them?
->
-> **Report only** — I'll document everything in the audit log but won't touch your code. Good for auditing a live site, a codebase you don't own, or when you want to review findings before fixing.
->
-> **Fix automatically** — After reporting, I'll work through each affected file and apply the correct fix. I'll tell you what I'm changing and why before each save.
->
-> **Fix with visual review** — Same as fix, but after each file is saved I'll open a before/after screenshot comparison in the browser so you can approve or reject each change visually.
->
-> *Note: fix modes require your source files to be in the working directory. Don't use them if you're auditing a production or staging site you can't modify.*
+Use `AskUserQuestion` with 1 question:
 
-Wait for the user's answer. Set `FIX_VIOLATIONS` and `VISUAL_REVIEW` accordingly.
+**Question: "What would you like to do with the findings after reporting?"**
+- Header: `After audit`
+- Option 1 — label: `Report only`, description: `Document findings in the audit log — don't touch code. Good for external sites or when you want to review before fixing.`
+- Option 2 — label: `Fix automatically`, description: `Apply fixes to each affected file after reporting. Requires source files in the working directory.`
+- Option 3 — label: `Fix with visual review`, description: `Fix + before/after screenshot comparison in browser — approve or reject each change.`
+
+Set `FIX_VIOLATIONS` = true for Fix automatically or Fix with visual review. Set `VISUAL_REVIEW` = true for Fix with visual review.
 
 ---
 
 **0W-5 — Where to save files?**
 
-> Where would you like screenshots and temporary files saved?
->
-> This includes:
-> - Before/after screenshots for each state tested
-> - Visual comparison pages *(if using fix with visual review)*
-> - The CSV report *(if you choose to generate one)*
->
-> These must be **outside your project folder** — otherwise your dev server's file watcher will trigger a hot-reload every time a screenshot is taken, which can crash your app and wipe any open dialogs or form state.
->
-> Default:
-> - Windows: `C:\Users\[your-username]\Pictures\a11y-screenshots\`
-> - macOS/Linux: `~/Pictures/a11y-screenshots/`
->
-> Type a different path, or reply `default` to use the path shown above.
+Determine the OS-appropriate default path:
+- Windows: `C:\Users\<username>\Pictures\a11y-screenshots\`
+- macOS/Linux: `~/Pictures/a11y-screenshots/`
 
-Wait for the response. Set `SCREENSHOT_PATH` to the typed path, or to the platform default if the user replies "default", sends a blank message, or provides nothing. Create the folder if it doesn't already exist.
+Use `AskUserQuestion` with 1 question:
+
+**Question: "Where would you like screenshots and temporary files saved?"**
+- Header: `Screenshots`
+- Note before options: "Must be outside your project folder — file watchers trigger hot-reload on every write."
+- Option 1 — label: `Default`, description: the detected default path
+- *(User types a custom path via the automatic "Other" option)*
+
+Set `SCREENSHOT_PATH` to the typed path, or to the platform default if "Default" is chosen. Create the folder if it doesn't already exist.
 
 ---
 
-**0W-6 — CSV report?**
+**0W-6 + 0W-6b — Outputs?**
 
-> Would you like a CSV report of all findings at the end of the session?
->
-> It'll be saved to your screenshots folder alongside the before/after images, and can be imported into a spreadsheet or issue tracker.
->
-> - **Yes** — create or append to an existing report for this label
-> - **Yes, fresh** — delete any existing report for this label and start clean
-> - **No**
+Use `AskUserQuestion` with 2 questions:
 
-Wait for the user's answer. Set `EXPORT_REPORT` to true for "Yes" or "Yes, fresh". Set `FRESH_REPORT` to true for "Yes, fresh".
+**Question: "Would you like a CSV report at the end?"**
+- Header: `CSV report`
+- Option 1 — label: `Yes`, description: `Append to existing report for this label`
+- Option 2 — label: `Yes, fresh`, description: `Delete any existing report and start clean`
+- Option 3 — label: `No`
 
----
+Set `EXPORT_REPORT` = true for Yes or Yes, fresh. Set `FRESH_REPORT` = true for Yes, fresh.
 
-**0W-6b — Remediation plan?**
+**Question: "Would you like a shareable remediation plan?"**
+- Header: `Remediation plan`
+- Option 1 — label: `Yes`, description: `Markdown doc with prioritised findings and fix guidance — ready to share with a team or client`
+- Option 2 — label: `No`
 
-> Would you like a shareable remediation plan at the end of the session?
->
-> It's a Markdown document — prioritised findings, recommended fixes, and next steps — ready to hand off to a developer, share with a client, or drop into a ticket. Saved alongside the CSV in your screenshots folder.
->
-> - **Yes**
-> - **No**
-
-Wait for the user's answer. Set `EXPORT_PLAN` to true for "Yes".
+Set `EXPORT_PLAN` = true for Yes.
 
 ---
 
@@ -509,48 +481,31 @@ Otherwise, determine the OS-appropriate default:
 - Windows: `C:\Users\<username>\Pictures\a11y-screenshots\`
 - macOS/Linux: `~/Pictures/a11y-screenshots/`
 
-Then ask the user:
+**Setup questions — ask all at once using `AskUserQuestion`:**
 
-> **Where would you like screenshots and temporary files saved?**
->
-> This includes before/after screenshots, visual comparison pages, and the CSV report. These must be **outside your project folder** — file watchers inside the project trigger hot-reload every time a file is written.
->
-> Default: `[detected-default-path]`
->
-> Type a different path, or reply `default` to use the path shown above.
+Build a single `AskUserQuestion` call containing whichever of these three questions are still unset. Skip any whose flag was already provided.
 
-Wait for the response. Set `SCREENSHOT_PATH` to the typed path, or to the platform default if the user replies "default", sends a blank message, or provides nothing. Create the folder if it doesn't already exist.
+**Question: "Where would you like screenshots saved?"**
+- Header: `Screenshots`
+- Option 1 — label: `Default`, description: the detected default path (e.g. `C:\Users\ky\Pictures\a11y-screenshots\`)
+- *(User types a custom path via the automatic "Other" option)*
 
-**CSV export:**
+Set `SCREENSHOT_PATH` to the typed path, or to the platform default if "Default" is chosen. Create the folder if it doesn't already exist.
 
-If `EXPORT_REPORT` is already set (from `--report` or `--fresh-report` flag), skip this.
+**Question: "Would you like a CSV report at the end?"** *(skip if `EXPORT_REPORT` already set)*
+- Header: `CSV report`
+- Option 1 — label: `Yes`, description: `Append to existing report for this label`
+- Option 2 — label: `Yes, fresh`, description: `Delete any existing report and start clean`
+- Option 3 — label: `No`
 
-Otherwise ask:
+Set `EXPORT_REPORT` = true for Yes or Yes, fresh. Set `FRESH_REPORT` = true for Yes, fresh.
 
-> **Would you like a CSV report at the end?**
->
-> All findings will be saved as a CSV to your screenshots folder — easy to import into a spreadsheet or issue tracker.
->
-> - **Yes** — create or append to an existing report for this label
-> - **Yes, fresh** — delete any existing report for this label and start clean
-> - **No**
+**Question: "Would you like a shareable remediation plan?"** *(skip if `EXPORT_PLAN` already set)*
+- Header: `Remediation plan`
+- Option 1 — label: `Yes`, description: `Markdown doc with prioritised findings and fix guidance`
+- Option 2 — label: `No`
 
-Wait for the response. Set `EXPORT_REPORT` to true for "Yes" or "Yes, fresh". Set `FRESH_REPORT` to true for "Yes, fresh".
-
-**Remediation plan:**
-
-If `EXPORT_PLAN` is already set (from `--plan` flag), skip this.
-
-Otherwise ask:
-
-> **Would you like a shareable remediation plan at the end?**
->
-> A Markdown document with prioritised findings, recommended fixes, and next steps — ready to hand off to a developer, share with a client, or drop into a ticket. Saved to your screenshots folder.
->
-> - **Yes**
-> - **No**
-
-Wait for the response. Set `EXPORT_PLAN` to true for "Yes".
+Set `EXPORT_PLAN` = true for Yes.
 
 **Audit log:**
 - Check in order: `docs/ux/AUDIT_LOG.md` → `docs/AUDIT_LOG.md` → `AUDIT_LOG.md` → `.accessibility/audit-log.md`
@@ -770,16 +725,16 @@ Tell the user the result:
 
 Before starting, tell the user what's needed:
 
-> For the NVDA check I need NVDA running alongside the browser.
->
-> Please confirm:
-> - NVDA is running (you'll see it in the system tray)
-> - NVDA Speech Viewer is open: NVDA menu → Tools → Speech Viewer
->   *(or `nvda-testing-driver` is installed in this project for automated capture)*
->
-> Say **ready** when NVDA is running, or **skip** to skip this test.
+Tell the user: "For the NVDA check, please make sure NVDA is running (system tray) and Speech Viewer is open: NVDA menu → Tools → Speech Viewer. Or `nvda-testing-driver` in `package.json` enables automated capture."
 
-Wait for the user's response. If they say skip, note it and move on.
+Use `AskUserQuestion` with 1 question:
+
+**Question: "Is NVDA ready?"**
+- Header: `NVDA`
+- Option 1 — label: `Ready`, description: `NVDA is running and Speech Viewer is open`
+- Option 2 — label: `Skip`, description: `Continue without the NVDA check`
+
+If Skip, note it and move on.
 
 Load `references/nvda-checklist.md`. Use `nvda-testing-driver` if installed (check `package.json`), otherwise use Speech Viewer approach — after each key interaction, ask the user to share the Speech Viewer output.
 
@@ -794,16 +749,16 @@ Tell the user the result:
 
 Before starting, tell the user what's needed:
 
-> For the VoiceOver check I need VoiceOver running alongside the browser, with the Caption Panel visible so we can read the announcements as text.
->
-> Please:
-> 1. Enable VoiceOver: **Cmd+F5** (or triple-press Touch ID on supported Macs)
-> 2. Enable the Caption Panel: VoiceOver Utility (VO+F8) → Visuals → Show Caption Panel
-> 3. Open the page in **Safari** for best results
->
-> Say **ready** when VoiceOver is running and the Caption Panel is visible, or **skip** to skip this test.
+Tell the user: "For the VoiceOver check, please enable VoiceOver (Cmd+F5), open the Caption Panel (VoiceOver Utility → Visuals → Show Caption Panel), and use Safari for best results."
 
-Wait for the user's response. If they say skip, note it and move on.
+Use `AskUserQuestion` with 1 question:
+
+**Question: "Is VoiceOver ready?"**
+- Header: `VoiceOver`
+- Option 1 — label: `Ready`, description: `VoiceOver is on and the Caption Panel is visible`
+- Option 2 — label: `Skip`, description: `Continue without the VoiceOver check`
+
+If Skip, note it and move on.
 
 Load `references/voiceover-checklist.md`. After each interaction, ask the user to share what the Caption Panel shows. Work through the checklist items in that file.
 
@@ -828,12 +783,16 @@ Tell the user the result:
 
 **Skip if `RUN_FORMS` is false.**
 
-Tell the user:
-> Checking form accessibility — labels, required fields, validation messages, and field grouping...
->
-> I'll submit the form with empty fields to trigger validation. If this causes any data loss in the current state, let me know before I proceed.
+Use `AskUserQuestion` with 1 question:
 
-Wait briefly — if the user has concerns, address them before submitting. Then proceed.
+**Question: "Ready to check form accessibility?"**
+- Header: `Forms`
+- Option 1 — label: `Proceed`, description: `Submit the form with empty fields to trigger validation and check error handling`
+- Option 2 — label: `Skip form submit`, description: `Check form markup only — don't submit the form`
+- *(User types a concern via "Other" if needed)*
+
+If Proceed: submit the form empty, then inspect `aria-invalid`, `aria-describedby`, `aria-live` via `browser_evaluate`.
+If Skip form submit: check form markup and labels without submitting.
 
 Load `references/form-checks.md`. Submit the form empty, inspect `aria-invalid`, `aria-describedby`, `aria-live` via `browser_evaluate`. Report using the output template.
 
@@ -860,15 +819,15 @@ Summarise findings for this state:
 > *[If issues: brief list of the most impactful findings]*
 >
 > ---
-> **Is there another page or state you'd like to add to this audit?**
->
-> For example:
-> - A different page or section
-> - This page with a dialog or modal open
-> - An error state (form submitted with errors)
-> - A different step in a multi-step wizard
->
-> Navigate there in the browser and say **ready**, or say **done** if you've finished.
+
+Use `AskUserQuestion` with 1 question:
+
+**Question: "Would you like to test another page or state?"**
+- Header: `Next`
+- Option 1 — label: `Add another state`, description: `Navigate in the browser to the next page, dialog, or error state, then confirm`
+- Option 2 — label: `Done`, description: `Finish the audit and generate the report`
+
+If Add another state: go back to Step 3. If Done: proceed to Phase 3.
 
 **After recording findings for this state**, save a checkpoint:
 
@@ -891,9 +850,7 @@ Write `<SCREENSHOT_PATH>/a11y-<label-slug>-checkpoint.json` with the current `ST
 
 Each state record includes `url` (the full URL from `browser_evaluate`) so the CSV can report the correct URL per finding across multi-state sessions.
 
-**If the user says ready:** go back to Step 3 for the next state.
-
-**If the user says done:** proceed to Phase 3.
+*(Loop control is handled by the AskUserQuestion above.)*
 
 ---
 
