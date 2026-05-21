@@ -1,8 +1,8 @@
 # Structure, Heading, and Table Checks
 
-Use this reference during Step 7 of the audit (`--structure` flag).
+Use this reference during Step 8 of the audit (`--structure` flag).
 
-Covers three areas: heading hierarchy, table markup, and landmark/region structure. Some violations are caught automatically by axe in Step 4 — this step adds the manual review layer that axe cannot assess.
+Covers three areas: heading hierarchy, table markup, and landmark/region structure. Some violations are caught automatically by axe in Step 5 — this step adds the manual review layer that axe cannot assess.
 
 ---
 
@@ -113,7 +113,7 @@ LANDMARK STRUCTURE
 
 ---
 
-## Step 7 Output Template
+## Step 8 Output Template
 
 After running all checks, report findings in this format before moving to the fix step:
 
@@ -132,4 +132,4 @@ LANDMARKS
 Summary: N issues found (N heading · N table · N landmark)
 ```
 
-Carry any failures forward into Step 8 (Fix violations) alongside axe and keyboard failures.
+Carry any failures forward into Step 12 (Fix violations) alongside axe and keyboard failures.

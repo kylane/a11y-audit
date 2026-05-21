@@ -311,7 +311,9 @@ Set `RUN_CODE`, `RUN_KEYBOARD`, `RUN_NVDA`, `RUN_VOICEOVER`, `RUN_STRUCTURE`, `R
 - Option 3 — label: `2.0 AA`, description: `Older baseline, broadly supported`
 - *(User types a custom target e.g. `2.2-AAA` via "Other")*
 
-Set `WCAG_TARGET` from the answer, defaulting to `2.2-AA` if nothing is provided.
+Before asking: if `a11y-config.md` was found in Step 0W-1 and has a `wcag.wcag` value, note it above the question: *"Your `a11y-config.md` specifies [value] — select that below or choose a different standard."* The user's selection always wins.
+
+Set `WCAG_TARGET` from the answer, defaulting to the `wcag.wcag` value from `a11y-config.md` if present, or `2.2-AA` if neither is provided.
 
 ---
 
@@ -416,7 +418,7 @@ Set the following variables from the invocation flags:
 - `FIX_VIOLATIONS` = true if `--fix` or `--visual` was passed
 - `VISUAL_REVIEW` = true if `--visual` was passed
 - `EXPORT_REPORT` = true if `--report` or `--fresh-report` was passed
-- `FRESH_REPORT` = true if `--fresh-report` was passed
+- `FRESH_REPORT` = true if `--fresh-report` was passed *(if both `--report` and `--fresh-report` are passed, `--fresh-report` takes precedence)*
 - `EXPORT_PLAN` = true if `--plan` was passed
 - `SCREENSHOT_PATH` = from `a11y-config.md` if specified; otherwise determined and confirmed in Step 1
 - `STATES_TESTED` = empty list — will accumulate each state tested this session
@@ -503,7 +505,7 @@ Set `EXPORT_REPORT` = true for Yes or Yes, fresh. Set `FRESH_REPORT` = true for 
 Set `EXPORT_PLAN` = true for Yes.
 
 **Audit log:**
-- Check in order: `docs/ux/AUDIT_LOG.md` → `docs/AUDIT_LOG.md` → `AUDIT_LOG.md` → `.accessibility/audit-log.md`
+- Check in order: `docs/accessibility/AUDIT_LOG.md` → `docs/ux/AUDIT_LOG.md` → `docs/AUDIT_LOG.md` → `AUDIT_LOG.md`
 - If none found: create `docs/accessibility/AUDIT_LOG.md` using the template in `references/audit-log-format.md`
 
 **Tell the user what was detected:**
@@ -623,6 +625,11 @@ browser_evaluate → window.location.href
 
 Set `FULL_URL` = the full URL returned (e.g. `https://www.myapp.com/dashboard`).
 
+**Guard:** If `FULL_URL` is `about:blank` or empty, do not proceed. Tell the user:
+> The browser is still on a blank page — please navigate to the URL you want to audit, then say **ready** again.
+
+Return to Step 3 and wait.
+
 **If `LABEL` is `PENDING`**, derive the short URL label using these rules:
 - Strip protocol (`https://`, `http://`)
 - Strip `www.` prefix
@@ -656,7 +663,10 @@ Take a screenshot. The filename depends on whether fixes will be applied:
 - **`FIX_VIOLATIONS` is true** (local source audit with `--fix`): name it `a11y-<label-slug>-<state-slug>-<n>-before.png` — it will be paired with an after screenshot once fixes are applied.
 - **`FIX_VIOLATIONS` is false** (live URL or report-only audit): name it `a11y-<label-slug>-<state-slug>-<n>-snapshot.png` — there is no after, so "before" is misleading.
 
-Where `<n>` is the iteration number (1 for the first state, 2 for the second, etc.), and `<label-slug>` / `<state-slug>` are the respective labels with spaces and special characters (`.`, `/`, `:`) replaced by hyphens.
+Where:
+- `<n>` is the iteration number (1 for the first state, 2 for the second, etc.)
+- `<label-slug>` is `LABEL` with spaces and special characters (`.`, `/`, `:`, `?`, `*`, `"`, `|`, `<`, `>`) replaced by hyphens
+- `<state-slug>` is a 1–3 word description of the specific UI state being captured — derived from the path segment of `FULL_URL` (e.g. `dashboard`, `settings-billing`) or a descriptive word if the path is ambiguous (e.g. `dialog-open`, `error-state`, `home`). Use the same character-replacement rules as `<label-slug>`.
 
 #### Step 5: Axe scan *(runs when RUN_CODE is true)*
 
@@ -713,6 +723,20 @@ Tell the user the result:
 #### Step 7: Screen reader check *(runs when RUN_NVDA or RUN_VOICEOVER is true)*
 
 **Skip if both `RUN_NVDA` and `RUN_VOICEOVER` are false.**
+
+**OS guard:** Detect the OS before running either screen reader:
+```js
+browser_evaluate → navigator.platform
+```
+- Starts with `Win` → Windows
+- Starts with `Mac` → macOS
+- Other → Linux / unknown
+
+If `RUN_VOICEOVER` is true and OS is **not** macOS: skip VoiceOver, tell the user:
+> VoiceOver is only available on macOS — skipping this check on Windows.
+
+If `RUN_NVDA` is true and OS is **not** Windows: skip NVDA, tell the user:
+> NVDA is only available on Windows — skipping this check on macOS.
 
 ---
 
@@ -786,10 +810,11 @@ Use `AskUserQuestion` with 1 question:
 - Option 2 — label: `Skip form submit`, description: `Check form markup only — don't submit the form`
 - *(User types a concern via "Other" if needed)*
 
-If Proceed: submit the form empty, then inspect `aria-invalid`, `aria-describedby`, `aria-live` via `browser_evaluate`.
-If Skip form submit: check form markup and labels without submitting.
+Load `references/form-checks.md`.
 
-Load `references/form-checks.md`. Submit the form empty, inspect `aria-invalid`, `aria-describedby`, `aria-live` via `browser_evaluate`. Report using the output template.
+If **Proceed**: submit the form empty, then inspect `aria-invalid`, `aria-describedby`, `aria-live` via `browser_evaluate`. Report using the output template.
+
+If **Skip form submit**: check form markup and labels only — do not submit. Skip the validation message checks in the reference checklist.
 
 Tell the user the result:
 > Form check complete — *[N issues / all clear]*
@@ -963,7 +988,7 @@ browser_navigate → file:///[path to comparison HTML]
 Tell the user:
 > Re-running axe to confirm all fixes hold...
 
-Re-run the Step 5 axe script at every checkpoint.
+Re-run the axe scan (same script as Step 5) after all fixes in the current batch are applied.
 
 - All clear → proceed
 - Violations remain → fix, re-run, repeat

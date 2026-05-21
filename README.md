@@ -252,15 +252,12 @@ When you run the skill, here's what a typical session looks like:
 
 **Step 1 — Claude detects your project and asks where to save files:**
 
-> **Where would you like screenshots and temporary files saved?**
+> **Where would you like screenshots saved?**
 >
-> This includes before/after screenshots, visual comparison pages, and the CSV report (if using `--report`). These must be **outside your project folder** — file watchers inside the project trigger hot-reload every time a file is written.
->
-> Default: `C:\Users\you\Pictures\a11y-screenshots\`
->
-> Type a different path, or reply `default` to use the path shown above.
+> - **Default (a11y-screenshots/)** — Saved inside the project root — gitignored, works reliably with Playwright MCP
+> - **Custom path** — Type a subfolder path — must be within the project directory (Playwright MCP restriction)
 
-You confirm the path (or type a new one), and Claude creates the folder if it doesn't exist.
+You confirm the path, and Claude creates the folder if it doesn't exist.
 
 **Step 2 — Claude summarises what it found and what will run:**
 
@@ -272,7 +269,7 @@ You confirm the path (or type a new one), and Claude creates the folder if it do
 > Tests queued: axe · keyboard · structure · forms
 > Mode: report only
 >
-> Screenshots will be saved to: `C:\Users\you\Pictures\a11y-screenshots\`
+> Screenshots will be saved to: `a11y-screenshots/`
 > Findings will be added to: `docs/accessibility/AUDIT_LOG.md`
 
 **Step 3 — Claude opens a browser and tells you what to do:**
@@ -397,7 +394,7 @@ Claude will walk you through everything in plain language before any tests run. 
 > Here's what's going to happen next:
 >
 > 1. I'll scan your project to detect your framework and configuration
-> 2. I'll ask where to save screenshots and temp files (outside your project folder)
+> 2. I'll ask where to save screenshots (default: `a11y-screenshots/` in the project root, gitignored)
 > 3. I'll open a browser window — it will start blank, that's expected
 > 4. I'll ask you to navigate to the page or state you want tested — log in, open the right dialog, trigger the error state — then say **ready**
 > 5. I'll run the selected tests and report findings
@@ -444,7 +441,7 @@ Create an `a11y-config.md` file in your project root to override auto-detection:
 ```markdown
 # a11y-config
 
-screenshots: C:\Users\you\Pictures\a11y-screenshots\
+screenshots: a11y-screenshots/
 audit-log: docs/accessibility/AUDIT_LOG.md
 component-library: [your component library name]
 lint: yarn lint:web
@@ -537,7 +534,7 @@ These apply in every project and cannot be overridden by `a11y-config.md`:
 
 - **Never navigate the browser without the user's instruction** — the user drives navigation; Claude drives testing
 - **Never submit forms or trigger destructive actions** without warning the user first
-- **Never save screenshots or temp files inside the project folder** — file watchers trigger hot-reload on every write
+- **Save screenshots to `a11y-screenshots/` inside the project root** — Playwright MCP cannot write outside the project directory; `a11y-screenshots/` is gitignored so screenshots are never committed accidentally
 - **Never save the same file more than once per task** — batch all edits into one save per file
 - **Never commit without explicit user instruction**
 - **Re-inject axe after every `browser_navigate`** — it does not persist between page navigations
@@ -594,7 +591,7 @@ Key design decisions:
 - **Multi-state scanning** catches violations that only appear when dialogs or overlays are open
 - **Stack-agnostic fix patterns** — examples use generic HTML and framework-neutral React so the guidance applies regardless of component library
 - **`a11y-config.md`** keeps project-specific overrides out of the generic skill
-- **Screenshots outside the repo** — critical constraint; files inside the project folder pollute git and trigger file-watcher reloads
+- **Screenshots in `a11y-screenshots/`** — Playwright MCP can only write within the project directory; `a11y-screenshots/` is gitignored so screenshots stay local and never pollute the repo
 
 ---
 
