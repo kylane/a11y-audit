@@ -608,7 +608,7 @@ Tell the user:
 
 Wait. Do not proceed until the user confirms.
 
-#### Step 4: Confirm state and take baseline screenshot
+#### Step 4: Confirm state and take screenshot
 
 When the user says ready, take a snapshot to confirm the current state:
 
@@ -651,12 +651,12 @@ Tell the user what you can see and confirm the plan:
 >
 > First up: *[name of first test]*. This will take a moment — I'll update you as each test completes.
 
-Take a baseline screenshot:
-```
-<output-path>/a11y-<label-slug>-<state-slug>-<n>-before.png
-```
+Take a screenshot. The filename depends on whether fixes will be applied:
 
-Where `<n>` is the iteration number (1 for the first state, 2 for the second, etc.), and `<label-slug>` is the label with spaces replaced by hyphens and special characters (`.`, `/`, `:`) replaced by hyphens.
+- **`FIX_VIOLATIONS` is true** (local source audit with `--fix`): name it `a11y-<label-slug>-<state-slug>-<n>-before.png` — it will be paired with an after screenshot once fixes are applied.
+- **`FIX_VIOLATIONS` is false** (live URL or report-only audit): name it `a11y-<label-slug>-<state-slug>-<n>-snapshot.png` — there is no after, so "before" is misleading.
+
+Where `<n>` is the iteration number (1 for the first state, 2 for the second, etc.), and `<label-slug>` / `<state-slug>` are the respective labels with spaces and special characters (`.`, `/`, `:`) replaced by hyphens.
 
 #### Step 5: Axe scan *(runs when RUN_CODE is true)*
 
@@ -1182,6 +1182,7 @@ Tell the user:
 - [ ] Form report produced *(if RUN_FORMS)*
 - [ ] All fixes applied and re-verified *(if FIX_VIOLATIONS)*
 - [ ] All fixes approved via visual review *(if VISUAL_REVIEW)*
+- [ ] Snapshot screenshot saved to `a11y-screenshots/` *(if not FIX_VIOLATIONS)*
 - [ ] Before/after screenshots saved to `a11y-screenshots/` *(if FIX_VIOLATIONS)*
 - [ ] Audit log updated with all findings from this session
 - [ ] Lint passes with no new errors *(if FIX_VIOLATIONS)*
